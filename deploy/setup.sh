@@ -8,7 +8,7 @@ set -e
 
 DOMAIN="fortune.kiosk.pub"            # 默认域名；如需替换，请编辑此行或在运行前修改
 PROJECT_DIR="/opt/hxz-fortune-telling"
-SERVICE_NAME="hxz-fortune"
+SERVICE_NAME="hxz-fortune-telling"
 LOG_DIR="/var/log/hxz-fortune"
 APP_USER="$(stat -c '%U' "$PROJECT_DIR" 2>/dev/null || true)"
 
@@ -59,7 +59,7 @@ certbot --nginx -d $DOMAIN --non-interactive --agree-tos \
 systemctl reload nginx || true
 
 echo ">>> [6/7] 安装并启动 systemd 服务"
-cp "$PROJECT_DIR/deploy/hxz-fortune.service" /etc/systemd/system/$SERVICE_NAME.service
+cp "$PROJECT_DIR/deploy/hxz-fortune-telling.service" /etc/systemd/system/$SERVICE_NAME.service
 sed -i "s|__APP_USER__|$APP_USER|g; s|__APP_GROUP__|$APP_GROUP|g" /etc/systemd/system/$SERVICE_NAME.service
 systemctl daemon-reload
 systemctl enable $SERVICE_NAME

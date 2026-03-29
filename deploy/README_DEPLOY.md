@@ -19,6 +19,14 @@ sudo rsync -a --exclude '.git' /local/path/hxz-fortune-telling /opt/hxz-fortune-
 sudo bash /opt/hxz-fortune-telling/deploy/setup.sh
 ```
 
+部署完成后，systemd 单元名为 `hxz-fortune-telling.service`，可用以下命令查看与管理服务：
+
+```bash
+sudo systemctl status hxz-fortune-telling --no-pager
+sudo journalctl -u hxz-fortune-telling -f
+sudo systemctl restart hxz-fortune-telling
+```
+
 4. 完成后访问 `https://<your-domain>`。
 
 手动步骤（替代）
