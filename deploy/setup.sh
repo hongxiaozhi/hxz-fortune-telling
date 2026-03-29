@@ -1,13 +1,13 @@
 #!/bin/bash
 # =============================================================
 # hxz-fortune 初次上线初始化脚本（示例，Ubuntu）
-# 使用前：将项目上传到 /opt/hxz-fortune
-# 执行：sudo bash /opt/hxz-fortune/deploy/setup.sh
+# 使用前：将项目上传到 /opt/hxz-fortune-telling
+# 执行：sudo bash /opt/hxz-fortune-telling/deploy/setup.sh
 # =============================================================
 set -e
 
 DOMAIN="fortune.kiosk.pub"            # 默认域名；如需替换，请编辑此行或在运行前修改
-PROJECT_DIR="/opt/hxz-fortune"
+PROJECT_DIR="/opt/hxz-fortune-telling"
 SERVICE_NAME="hxz-fortune"
 LOG_DIR="/var/log/hxz-fortune"
 APP_USER="$(stat -c '%U' "$PROJECT_DIR" 2>/dev/null || true)"

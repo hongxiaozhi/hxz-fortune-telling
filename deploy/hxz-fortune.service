@@ -6,10 +6,10 @@ After=network.target
 [Service]
 User=__APP_USER__
 Group=__APP_GROUP__
-WorkingDirectory=/opt/hxz-fortune/backend
-Environment="PATH=/opt/hxz-fortune/backend/venv/bin"
+WorkingDirectory=/opt/hxz-fortune-telling/backend
+Environment="PATH=/opt/hxz-fortune-telling/backend/venv/bin"
 
-ExecStart=/opt/hxz-fortune/backend/venv/bin/gunicorn \
+ExecStart=/opt/hxz-fortune-telling/backend/venv/bin/gunicorn \
     --workers 2 \
     --bind 127.0.0.1:8002 \
     --timeout 60 \

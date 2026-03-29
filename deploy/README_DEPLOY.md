@@ -4,19 +4,19 @@
 - 本目录包含可复用的部署模板：`hxz-fortune.service`（systemd）、`nginx-hxz-fortune.conf`（Nginx）和 `setup.sh`（自动化安装脚本）。
 
 快速上手（服务器上执行）
-1. 将整个项目复制到服务器的 `/opt/hxz-fortune`：
+1. 将整个项目复制到服务器的 `/opt/hxz-fortune-telling`：
 
 ```bash
 # 在服务器上（示例）
 sudo mkdir -p /opt
-sudo rsync -a --exclude '.git' /local/path/hxz-fortune-telling /opt/hxz-fortune
+sudo rsync -a --exclude '.git' /local/path/hxz-fortune-telling /opt/hxz-fortune-telling
 ```
 
 2. 编辑 `deploy/setup.sh` 顶部的 `DOMAIN` 变量，替换为你的域名或在运行前以环境变量方式修改。
 3. 以 `root` 或 `sudo` 运行安装脚本：
 
 ```bash
-sudo bash /opt/hxz-fortune/deploy/setup.sh
+sudo bash /opt/hxz-fortune-telling/deploy/setup.sh
 ```
 
 4. 完成后访问 `https://<your-domain>`。
