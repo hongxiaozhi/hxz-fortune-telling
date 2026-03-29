@@ -87,3 +87,9 @@ This project provides a set of cross-platform scripts for setup, development, an
 - For custom environments, you may edit the scripts as needed.
 - Frontend API base URL can be customized by setting `window.__API_BASE_URL` before loading `frontend/app.js`.
 - For further help, consult script comments or contact the project maintainer.
+
+## Git Push Quick Reference
+
+- Check remotes: `git remote -v`
+- Push current branch first time: `git push -u origin <branch-name>`
+- Push subsequent updates: `git push`
