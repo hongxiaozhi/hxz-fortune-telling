@@ -45,6 +45,19 @@ def health():
         'version': 'v1.1.0'
     })
 
+
+@app.route('/', methods=['GET'])
+def index():
+    # Provide a simple JSON overview when hitting the root path
+    return jsonify({
+        'service': 'hxz-fortune',
+        'status': 'running',
+        'available_endpoints': [
+            {'path': '/api/fortune/health', 'method': 'GET', 'desc': 'health check'},
+            {'path': '/api/fortune/analyze', 'method': 'POST', 'desc': 'analysis endpoint'}
+        ]
+    })
+
 # --- Validation and Segmentation ---
 def validate_and_segment(data):
     required = ['gender', 'calendar_type', 'birth_date', 'start_date', 'end_date']
@@ -170,4 +183,4 @@ def analyze():
     return jsonify(result)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)
