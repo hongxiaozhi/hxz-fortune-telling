@@ -6,7 +6,7 @@ REM Usage: start.bat
 cd /d %~dp0\backend
 IF EXIST app.py (
     echo Starting backend server (app.py)...
-    python app.py
+    python3 app.py
 ) ELSE (
     echo app.py not found in backend\
     exit /b 1

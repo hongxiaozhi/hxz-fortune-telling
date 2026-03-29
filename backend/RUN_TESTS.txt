@@ -1,2 +1,0 @@
-python -m py_compile backend/app.py
-pytest backend/tests -q

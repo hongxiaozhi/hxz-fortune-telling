@@ -19,23 +19,23 @@ This project provides a set of cross-platform scripts for setup, development, an
 
 | Script                      | Purpose                                                      |
 |-----------------------------|--------------------------------------------------------------|
-| install_requirements.sh/.bat | Install backend Python dependencies                          |
+| setup.sh                    | Create/activate venv and install backend Python dependencies |
 | start.sh/.bat               | Start the backend server (`backend/app.py`)                  |
 | upgrade.sh/.bat             | Pull latest code, reinstall dependencies, init database      |
 
 ---
 
-## 1. Installing Dependencies
+## 1. 环境初始化与依赖安装
 
-Installs all Python packages listed in `backend/requirements.txt`.
+推荐使用 `setup.sh`（Linux/macOS/WSL）或 `setup.bat`（Windows）自动创建/激活虚拟环境并安装依赖。
+
+**Linux/macOS/WSL:**
+
+  bash setup.sh
 
 **Windows:**
 
-    install_requirements.bat
-
-**Linux/macOS:**
-
-    bash install_requirements.sh
+  setup.bat
 
 ---
 
@@ -71,14 +71,14 @@ Pulls the latest code from git, reinstalls dependencies, and initializes the dat
 
 ### Windows (Command Prompt or PowerShell)
 
-    install_requirements.bat
+    setup.bat
     start.bat
     upgrade.bat
 
 ### Unix-like (Linux/macOS Terminal)
 
     chmod +x *.sh  # (first time only, if needed)
-    bash install_requirements.sh
+    bash setup.sh
     bash start.sh
     bash upgrade.sh
 

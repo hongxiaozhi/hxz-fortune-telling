@@ -10,7 +10,7 @@ cd "$SCRIPT_DIR/backend"
 
 if [ -f app.py ]; then
     echo "Starting backend server (app.py)..."
-    python app.py
+    python3 app.py
 else
     echo "app.py not found in backend/"
     exit 1
