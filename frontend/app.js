@@ -1,5 +1,7 @@
 // HXZ Fortune v1.1 前端主逻辑
 const { createApp, ref, reactive, onMounted } = Vue;
+const API_BASE_URL = window.__API_BASE_URL__
+  || (window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin);
 
 createApp({
   setup() {
@@ -68,7 +70,7 @@ createApp({
       try {
         const payload = { ...form };
         if (!form.has_birth_time) payload.birth_time = null;
-        const { data } = await axios.post('http://localhost:5000/api/fortune/analyze', payload);
+        const { data } = await axios.post(`${API_BASE_URL}/api/fortune/analyze`, payload);
         Object.assign(result, data);
         saveHistory(data);
         view.value = 'result';

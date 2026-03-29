@@ -1,3 +1,18 @@
+import sys
+import os
+from datetime import datetime
+from importlib.metadata import version
+
+import pytest
+import werkzeug
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from app import app
+
+if not hasattr(werkzeug, '__version__'):
+    werkzeug.__version__ = version('werkzeug')
+
+
 def test_invalid_gender(client):
     payload = valid_payload(gender='invalid')
     resp = client.post('/api/fortune/analyze', json=payload)
@@ -45,13 +60,6 @@ def test_malformed_json_returns_json_error(client):
     data = resp.get_json()
     assert data['error'] == 'invalid_json'
     assert 'Malformed JSON' in data['message']
-
-import sys
-import os
-import pytest
-from flask import json
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from app import app
 
 @pytest.fixture
 def client():
@@ -137,14 +145,14 @@ def test_segmentation_7_day_chunks(client):
     segments = data['segments']
     assert len(segments) == 5  # 4x7 + 1x2 days
     for seg in segments[:-1]:
-        sd = seg['start_date']
-        ed = seg['end_date']
-        d1 = (int(ed[-2:]) - int(sd[-2:]) + 1)
+        sd = datetime.strptime(seg['start_date'], '%Y-%m-%d')
+        ed = datetime.strptime(seg['end_date'], '%Y-%m-%d')
+        d1 = (ed - sd).days + 1
         assert d1 == 7
     last = segments[-1]
-    sd = last['start_date']
-    ed = last['end_date']
-    d1 = (int(ed[-2:]) - int(sd[-2:]) + 1)
+    sd = datetime.strptime(last['start_date'], '%Y-%m-%d')
+    ed = datetime.strptime(last['end_date'], '%Y-%m-%d')
+    d1 = (ed - sd).days + 1
     assert d1 <= 7
 
 def test_segment_trend_field(client):

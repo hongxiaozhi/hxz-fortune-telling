@@ -35,8 +35,6 @@ def handle_bad_json(e):
     return jsonify({'error': 'bad_request', 'message': str(e)}), 400
 
 # --- Health Check ---
-
-# --- Health Check ---
 @app.route('/api/fortune/health', methods=['GET'])
 def health():
     return jsonify({

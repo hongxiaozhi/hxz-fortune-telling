@@ -21,6 +21,7 @@ This project provides a set of cross-platform scripts for setup, development, an
 |-----------------------------|--------------------------------------------------------------|
 | setup.sh / setup.bat        | Create/activate venv and install backend Python dependencies |
 | update.bat                  | Pull latest code, upgrade dependencies, init DB, start server (Windows) |
+| update.sh                   | Pull latest code, upgrade dependencies, init DB, restart backend (Linux/macOS) |
 
 ---
 
@@ -84,4 +85,5 @@ This project provides a set of cross-platform scripts for setup, development, an
 
 - Scripts use relative paths and must be run from the project root.
 - For custom environments, you may edit the scripts as needed.
+- Frontend API base URL can be customized by setting `window.__API_BASE_URL` before loading `frontend/app.js`.
 - For further help, consult script comments or contact the project maintainer.
