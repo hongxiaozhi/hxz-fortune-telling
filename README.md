@@ -19,9 +19,8 @@ This project provides a set of cross-platform scripts for setup, development, an
 
 | Script                      | Purpose                                                      |
 |-----------------------------|--------------------------------------------------------------|
-| setup.sh                    | Create/activate venv and install backend Python dependencies |
-| start.sh/.bat               | Start the backend server (`backend/app.py`)                  |
-| upgrade.sh/.bat             | Pull latest code, reinstall dependencies, init database      |
+| setup.sh / setup.bat        | Create/activate venv and install backend Python dependencies |
+| update.bat                  | Pull latest code, upgrade dependencies, init DB, start server (Windows) |
 
 ---
 
@@ -39,48 +38,28 @@ This project provides a set of cross-platform scripts for setup, development, an
 
 ---
 
-## 2. Starting the Backend Server
 
-Launches the backend Flask server (`backend/app.py`).
 
-**Windows:**
+## 2. 一键升级并启动服务（Windows）
 
-    start.bat
-
-**Linux/macOS:**
-
-    bash start.sh
-
----
-
-## 3. Upgrading the Project
-
-Pulls the latest code from git, reinstalls dependencies, and initializes the database if `backend/init_db.py` exists.
+自动拉取最新代码、升级依赖、初始化数据库（如有），并启动后端服务。
 
 **Windows:**
 
-    upgrade.bat
-
-**Linux/macOS:**
-
-    bash upgrade.sh
-
----
+  update.bat
 
 ## Usage Examples
 
 ### Windows (Command Prompt or PowerShell)
 
     setup.bat
-    start.bat
-    upgrade.bat
+    update.bat
 
 ### Unix-like (Linux/macOS Terminal)
 
     chmod +x *.sh  # (first time only, if needed)
     bash setup.sh
-    bash start.sh
-    bash upgrade.sh
+    # Linux/macOS 用户请手动依次运行 setup.sh 和 python backend/app.py
 
 ---
 
