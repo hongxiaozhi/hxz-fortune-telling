@@ -1,0 +1,172 @@
+/* HXZ Fortune v1.1 基础样式，移动端友好 */
+body {
+  font-family: 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  margin: 0;
+  background: #f7f7fa;
+  color: #222;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  padding: 12px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.logo {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+.history-btn {
+  background: #f0f0f0;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #0001;
+  margin-bottom: 20px;
+  padding: 20px;
+}
+.input-card, .result-card, .loading-card {
+  max-width: 480px;
+  margin: 0 auto;
+}
+.form-row {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.form-row label {
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+input, select {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1em;
+}
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+}
+.main-btn {
+  background: #4e8cff;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 1em;
+  cursor: pointer;
+  margin-right: 10px;
+}
+.error {
+  color: #e74c3c;
+  font-size: 0.95em;
+  margin-top: 2px;
+}
+.precision-card {
+  background: #f0f6ff;
+  border-left: 4px solid #4e8cff;
+  padding: 10px 16px;
+  margin-top: 10px;
+  font-size: 0.98em;
+}
+.loading {
+  text-align: center;
+  font-size: 1.2em;
+  color: #4e8cff;
+  padding: 40px 0;
+}
+.disclaimer {
+  background: #fffbe6;
+  border-left: 4px solid #ffe58f;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  font-size: 0.98em;
+}
+.summary, .wuxing-score, .overall-advice, .segments {
+  margin-bottom: 18px;
+}
+.segment {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: #fafcff;
+}
+.segment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.deviated-banner {
+  color: #e67e22;
+  font-weight: bold;
+  font-size: 0.98em;
+}
+.dimensions span {
+  display: inline-block;
+  margin-right: 10px;
+  font-size: 0.97em;
+}
+.upgrade-hint {
+  background: #e6f7ff;
+  border-left: 4px solid #91d5ff;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+}
+.result-actions {
+  text-align: center;
+  margin-top: 18px;
+}
+.history-drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 260px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -2px 0 8px #0002;
+  z-index: 100;
+  padding: 20px 16px;
+  overflow-y: auto;
+}
+.history-drawer h4 {
+  margin-top: 0;
+}
+.history-drawer ul {
+  list-style: none;
+  padding: 0;
+}
+.history-drawer li {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  main, .input-card, .result-card, .loading-card {
+    max-width: 100vw;
+    padding: 8px;
+  }
+  .card {
+    padding: 12px;
+  }
+  .history-drawer {
+    width: 90vw;
+  }
+}

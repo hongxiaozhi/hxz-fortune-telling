@@ -1,0 +1,143 @@
+<!-- HXZ Fortune v1.1 前端入口 -->
+<!-- 运行说明：直接用浏览器打开本文件，需后端 Flask 运行在 http://localhost:5000 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>八字简测 - HXZ Fortune v1.1</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="logo">八字简测</div>
+      <button class="history-btn" @click="showHistory = !showHistory">历史记录</button>
+    </header>
+    <main>
+      <section v-if="view==='input'" class="card input-card">
+        <h2>基础信息</h2>
+        <form @submit.prevent="onSubmit">
+          <div class="form-row">
+            <label>姓名（可选）</label>
+            <input v-model="form.name" maxlength="10" placeholder="可留空">
+          </div>
+          <div class="form-row">
+            <label>性别</label>
+            <select v-model="form.gender" required>
+              <option value="">请选择</option>
+              <option value="male">男</option>
+              <option value="female">女</option>
+              <option value="other">其他</option>
+              <option value="unknown">未知</option>
+            </select>
+            <span class="error" v-if="errors.gender">{{errors.gender}}</span>
+          </div>
+          <div class="form-row">
+            <label>日历类型</label>
+            <select v-model="form.calendar_type" required>
+              <option value="solar">公历</option>
+              <option value="lunar">农历</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>出生日期</label>
+            <input type="date" v-model="form.birth_date" required>
+            <span class="error" v-if="errors.birth_date">{{errors.birth_date}}</span>
+          </div>
+          <div class="form-row">
+            <label>有出生时辰</label>
+            <input type="checkbox" v-model="form.has_birth_time">
+          </div>
+          <div class="form-row" v-if="form.has_birth_time">
+            <label>出生时辰</label>
+            <input type="time" v-model="form.birth_time">
+          </div>
+          <div class="form-row">
+            <label>精度模式</label>
+            <select v-model="form.precision_mode">
+              <option value="standard">标准</option>
+              <option value="approx">大致</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>分析区间</label>
+            <input type="date" v-model="form.start_date" required> 至
+            <input type="date" v-model="form.end_date" required>
+            <span class="error" v-if="errors.date_range">{{errors.date_range}}</span>
+          </div>
+          <div class="form-row">
+            <button type="submit" class="main-btn">开始分析</button>
+            <button type="button" @click="resetForm">重置</button>
+          </div>
+        </form>
+        <div class="precision-card">
+          <p>标准模式：需出生时辰，分析更精准。</p>
+          <p>大致模式：无需时辰，建议补充后体验更佳。</p>
+          <p>区间最多180天，默认30天。</p>
+        </div>
+      </section>
+      <section v-if="view==='loading'" class="card loading-card">
+        <div class="loading">分析中，请稍候…</div>
+      </section>
+      <section v-if="view==='result'" class="card result-card">
+        <div class="disclaimer">{{result.disclaimer}}</div>
+        <div class="summary">
+          <h3>八字简析</h3>
+          <div>年柱：{{result.bazi_summary.year_pillar}}，月柱：{{result.bazi_summary.month_pillar}}，日柱：{{result.bazi_summary.day_pillar}}<span v-if="result.bazi_summary.hour_pillar">，时柱：{{result.bazi_summary.hour_pillar}}</span></div>
+        </div>
+        <div class="wuxing-score">
+          <h4>五行分布</h4>
+          <ul>
+            <li v-for="(v, k) in result.wuxing_score" :key="k">{{k}}：{{v}}</li>
+          </ul>
+        </div>
+        <div class="overall-advice">
+          <h4>整体建议</h4>
+          <div>宜：{{result.overall_advice.suitable}}</div>
+          <div>忌：{{result.overall_advice.avoid}}</div>
+          <div>提醒：{{result.overall_advice.reminder}}</div>
+        </div>
+        <div v-if="result.precision_note" class="precision-note">{{result.precision_note}}</div>
+        <div v-if="result.upgrade_hint && result.upgrade_hint.show" class="upgrade-hint">
+          <strong>{{result.upgrade_hint.title}}</strong>
+          <div>{{result.upgrade_hint.content}}</div>
+        </div>
+        <div class="segments">
+          <h4>分段建议</h4>
+          <div v-for="seg in result.segments" :key="seg.segment_index" class="segment">
+            <div class="segment-header">
+              <span>第{{seg.segment_index}}段（{{seg.start_date}} ~ {{seg.end_date}}）</span>
+              <span v-if="seg.trend_alignment==='deviated'" class="deviated-banner">本段偏离整体趋势</span>
+            </div>
+            <div>宜：{{seg.suitable}}</div>
+            <div>忌：{{seg.avoid}}</div>
+            <div>提醒：{{seg.reminder}}</div>
+            <div class="dimensions">
+              <span>学业/事业：{{seg.dimensions.work_study}}</span>
+              <span>财运：{{seg.dimensions.finance}}</span>
+              <span>社交：{{seg.dimensions.social}}</span>
+              <span>健康：{{seg.dimensions.health}}</span>
+            </div>
+          </div>
+        </div>
+        <div class="result-actions">
+          <button @click="view='input'">再测一次</button>
+        </div>
+      </section>
+      <aside v-if="showHistory" class="history-drawer">
+        <h4>历史记录</h4>
+        <ul>
+          <li v-for="(item, idx) in history" :key="item.request_id" @click="loadHistory(idx)">
+            {{item.bazi_summary.year_pillar}}-{{item.bazi_summary.month_pillar}}-{{item.bazi_summary.day_pillar}}（{{item.overall_advice.suitable}}）
+          </li>
+        </ul>
+        <button @click="showHistory=false">关闭</button>
+      </aside>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
