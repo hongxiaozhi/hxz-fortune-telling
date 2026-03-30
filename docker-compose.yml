@@ -1,0 +1,69 @@
+# Traefik + hxz-blog example docker-compose
+# - Edit the domain and email below ("blog.kiosk.pub" / admin@example.com)
+# - Place this file at the repo root for the site (here: hxz-blog/docker-compose.yml)
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v2.10
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--certificatesResolvers.le.acme.tlsChallenge=true"
+      - "--certificatesResolvers.le.acme.email=admin@example.com"
+      - "--certificatesResolvers.le.acme.storage=/letsencrypt/acme.json"
+      - "--log.level=INFO"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - web
+
+  hxz-blog:
+    build:
+      context: .
+      dockerfile: deploy/site-template/Dockerfile
+    restart: unless-stopped
+    labels:
+      # change the Host(...) value to your domain
+      - "traefik.enable=true"
+      - "traefik.http.routers.hxz.rule=Host(`blog.kiosk.pub`)"
+      - "traefik.http.routers.hxz.entrypoints=websecure"
+      - "traefik.http.routers.hxz.tls.certresolver=le"
+      - "traefik.http.services.hxz.loadbalancer.server.port=5000"
+    environment:
+      JWT_SECRET_KEY: ${HXZ_JWT_SECRET_KEY:-change_me}
+      ADMIN_PASSWORD_HASH: ${HXZ_ADMIN_PASSWORD_HASH:-}
+    volumes:
+      - ./backend/blog.db:/app/backend/blog.db
+    networks:
+      - web
+
+  hxz-fortune:
+    build:
+      context: ../hxz-fortune-telling
+      dockerfile: deploy/site-template/Dockerfile
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hxz-fortune.rule=Host(`fortune.kiosk.pub`)"
+      - "traefik.http.routers.hxz-fortune.entrypoints=websecure"
+      - "traefik.http.routers.hxz-fortune.tls.certresolver=le"
+      - "traefik.http.services.hxz-fortune.loadbalancer.server.port=5000"
+    environment:
+      JWT_SECRET_KEY: ${FORT_JWT_SECRET_KEY:-change_me}
+      ADMIN_PASSWORD_HASH: ${FORT_ADMIN_PASSWORD_HASH:-}
+    volumes:
+      - ../hxz-fortune-telling/backend/fortune.db:/app/backend/fortune.db
+    networks:
+      - web
+
+networks:
+  web:
+    driver: bridge
