@@ -65,7 +65,7 @@ def test_health_endpoint(client):
     data = resp.get_json()
     assert 'status' in data and data['status'] == 'ok'
     assert 'service' in data and data['service'] == 'hxz-fortune'
-    assert 'version' in data and data['version'] == 'v1.1.0'
+    assert 'version' in data and data['version'] == 'v1.1.1'
 
 def valid_payload(**overrides):
     base = {
@@ -88,6 +88,9 @@ def test_analyze_valid(client):
     for key in ['request_id','disclaimer','precision_level','bazi_summary','wuxing_score','overall_advice','segments','upgrade_hint']:
         assert key in data
     assert isinstance(data['segments'], list) and len(data['segments']) > 0
+    assert '参考' in data['disclaimer']
+    assert data['bazi_summary']['year_pillar'] == '甲子'
+    assert '适合' in data['overall_advice']['suitable']
 
 def test_missing_required_fields(client):
     for field in ['gender','calendar_type','birth_date','start_date','end_date']:
@@ -128,6 +131,8 @@ def test_precision_downgrade_and_upgrade_hint(client):
     assert data['precision_level'] == 'low'
     assert data['upgrade_hint']['show'] is True
     assert data['precision_note']
+    assert '出生时辰' in data['precision_note']
+    assert '补充出生时辰' in data['upgrade_hint']['title']
 
 def test_segmentation_7_day_chunks(client):
     payload = valid_payload(start_date='2023-01-01', end_date='2023-01-30')
