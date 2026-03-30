@@ -1,10 +1,8 @@
-"""
-This docker-compose.yml is intended to be placed at the repository root
-alongside the `hxz-blog/` and `hxz-fortune-telling/` subdirectories.
-
-Before using: update domain names and ACME email addresses below.
-Run from repo root: `docker compose up -d --build`
-"""
+# This docker-compose.yml is intended to be placed at the repository root
+# alongside the `hxz-blog/` and `hxz-fortune-telling/` subdirectories.
+#
+# Before using: update domain names and ACME email addresses below.
+# Run from repo root: `docker compose up -d --build`
 
 version: "3.8"
 
@@ -30,29 +28,29 @@ services:
     networks:
       - web
 
-  hxz-blog:
-    build:
-      context: ./hxz-blog
-      dockerfile: hxz-blog/deploy/site-template/Dockerfile
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.hxz.rule=Host(`blog.kiosk.pub`)"
-      - "traefik.http.routers.hxz.entrypoints=websecure"
-      - "traefik.http.routers.hxz.tls.certresolver=le"
-      - "traefik.http.services.hxz.loadbalancer.server.port=5000"
-    environment:
-      JWT_SECRET_KEY: ${HXZ_JWT_SECRET_KEY:-change_me}
-      ADMIN_PASSWORD_HASH: ${HXZ_ADMIN_PASSWORD_HASH:-}
-    volumes:
-      - ./hxz-blog/backend/blog.db:/app/backend/blog.db
-    networks:
-      - web
+  # hxz-blog:
+  #   build:
+  #     context: ./hxz-blog
+  #     dockerfile: hxz-blog/deploy/site-template/Dockerfile
+  #   restart: unless-stopped
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.hxz.rule=Host(`blog.kiosk.pub`)"
+  #     - "traefik.http.routers.hxz.entrypoints=websecure"
+  #     - "traefik.http.routers.hxz.tls.certresolver=le"
+  #     - "traefik.http.services.hxz.loadbalancer.server.port=5000"
+  #   environment:
+  #     JWT_SECRET_KEY: ${HXZ_JWT_SECRET_KEY:-change_me}
+  #     ADMIN_PASSWORD_HASH: ${HXZ_ADMIN_PASSWORD_HASH:-}
+  #   volumes:
+  #     - ./hxz-blog/backend/blog.db:/app/backend/blog.db
+  #   networks:
+  #     - web
 
   hxz-fortune:
     build:
       context: ./hxz-fortune-telling
-      dockerfile: hxz-fortune-telling/deploy/site-template/Dockerfile
+      dockerfile: deploy/site-template/Dockerfile
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
@@ -64,6 +62,7 @@ services:
       JWT_SECRET_KEY: ${FORT_JWT_SECRET_KEY:-change_me}
       ADMIN_PASSWORD_HASH: ${FORT_ADMIN_PASSWORD_HASH:-}
     volumes:
+      # Optional persistent DB mount; current app can also run without it.
       - ./hxz-fortune-telling/backend/fortune.db:/app/backend/fortune.db
     networks:
       - web
