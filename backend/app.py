@@ -4,6 +4,7 @@
 
 
 
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.exceptions import BadRequest
@@ -11,7 +12,7 @@ from datetime import datetime, timedelta
 import uuid
 import re
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), '..', 'frontend'), static_url_path='')
 CORS(app)
 
 # --- Unified JSON error handlers ---
@@ -46,17 +47,17 @@ def health():
     })
 
 
-@app.route('/', methods=['GET'])
-def index():
-    # Provide a simple JSON overview when hitting the root path
-    return jsonify({
-        'service': 'hxz-fortune',
-        'status': 'running',
-        'available_endpoints': [
-            {'path': '/api/fortune/health', 'method': 'GET', 'desc': 'health check'},
-            {'path': '/api/fortune/analyze', 'method': 'POST', 'desc': 'analysis endpoint'}
-        ]
-    })
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    # If path looks like API route, let API handlers handle it (return 404 here)
+    if path.startswith('api/'):
+        return jsonify({'error': 'not_found'}), 404
+    # Serve static files when present; otherwise return index.html (SPA)
+    full_path = os.path.join(app.static_folder, path)
+    if path != '' and os.path.exists(full_path):
+        return app.send_static_file(path)
+    return app.send_static_file('index.html')
 
 # --- Validation and Segmentation ---
 def validate_and_segment(data):

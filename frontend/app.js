@@ -65,17 +65,18 @@ createApp({
     async function onSubmit() {
       if (!validate()) return;
       view.value = 'loading';
-      try {
-        const payload = { ...form };
-        if (!form.has_birth_time) payload.birth_time = null;
-        const { data } = await axios.post('http://localhost:5000/api/fortune/analyze', payload);
-        Object.assign(result, data);
-        saveHistory(data);
-        view.value = 'result';
-      } catch (e) {
-        view.value = 'input';
-        alert(e.response?.data?.message || '请求失败');
-      }
+        try {
+          const payload = { ...form };
+          if (!form.has_birth_time) payload.birth_time = null;
+          // use relative path so the frontend works behind the same origin (Traefik)
+          const { data } = await axios.post('/api/fortune/analyze', payload);
+          Object.assign(result, data);
+          saveHistory(data);
+          view.value = 'result';
+        } catch (e) {
+          view.value = 'input';
+          alert(e.response?.data?.message || '请求失败');
+        }
     }
     function saveHistory(data) {
       let arr = JSON.parse(localStorage.getItem('hxz_fortune_history') || '[]');
