@@ -1,6 +1,11 @@
-# Traefik + hxz-blog example docker-compose
-# - Edit the domain and email below ("blog.kiosk.pub" / admin@example.com)
-# - Place this file at the repo root for the site (here: hxz-blog/docker-compose.yml)
+"""
+This docker-compose.yml is intended to be placed at the repository root
+alongside the `hxz-blog/` and `hxz-fortune-telling/` subdirectories.
+
+Before using: update domain names and ACME email addresses below.
+Run from repo root: `docker compose up -d --build`
+"""
+
 version: "3.8"
 
 services:
@@ -27,11 +32,10 @@ services:
 
   hxz-blog:
     build:
-      context: .
-      dockerfile: deploy/site-template/Dockerfile
+      context: ./hxz-blog
+      dockerfile: hxz-blog/deploy/site-template/Dockerfile
     restart: unless-stopped
     labels:
-      # change the Host(...) value to your domain
       - "traefik.enable=true"
       - "traefik.http.routers.hxz.rule=Host(`blog.kiosk.pub`)"
       - "traefik.http.routers.hxz.entrypoints=websecure"
@@ -41,14 +45,14 @@ services:
       JWT_SECRET_KEY: ${HXZ_JWT_SECRET_KEY:-change_me}
       ADMIN_PASSWORD_HASH: ${HXZ_ADMIN_PASSWORD_HASH:-}
     volumes:
-      - ./backend/blog.db:/app/backend/blog.db
+      - ./hxz-blog/backend/blog.db:/app/backend/blog.db
     networks:
       - web
 
   hxz-fortune:
     build:
-      context: ../hxz-fortune-telling
-      dockerfile: deploy/site-template/Dockerfile
+      context: ./hxz-fortune-telling
+      dockerfile: hxz-fortune-telling/deploy/site-template/Dockerfile
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
@@ -60,7 +64,7 @@ services:
       JWT_SECRET_KEY: ${FORT_JWT_SECRET_KEY:-change_me}
       ADMIN_PASSWORD_HASH: ${FORT_ADMIN_PASSWORD_HASH:-}
     volumes:
-      - ../hxz-fortune-telling/backend/fortune.db:/app/backend/fortune.db
+      - ./hxz-fortune-telling/backend/fortune.db:/app/backend/fortune.db
     networks:
       - web
 
