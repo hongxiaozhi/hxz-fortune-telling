@@ -1,6 +1,6 @@
 # HXZ Fortune Telling
 
-这是 `HXZ` 工作区中的运势项目。
+这是 `HXZ` 工作区中的运势分析项目。
 
 ## 项目结构
 
@@ -51,11 +51,10 @@ pytest backend/tests/test_fortune_api.py
 ## 部署约定
 
 当前仓库结构已经统一到根目录 `docker-compose.yml`。
-
 不再推荐：
 
-- 子项目内单独维护启动脚本
-- `systemd + gunicorn` 旧模板
+- 在子项目内单独维护启动脚本
+- 使用旧的 `systemd + gunicorn` 模板
 
 如需查看线上问题处理过程，可参考：
 
