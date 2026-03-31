@@ -44,7 +44,7 @@ def health():
         {
             "status": "ok",
             "service": "hxz-fortune",
-            "version": "v1.1.0",
+            "version": "v1.1.1",
         }
     )
 
@@ -143,19 +143,19 @@ def analyze():
     upgrade_hint = {"show": False, "title": "", "content": "", "affected_dimensions": []}
 
     if precision_mode == "standard" and not has_birth_time:
-        precision_note = "Birth time was not provided, so the result has been downgraded to approximate mode."
+        precision_note = "由于未提供出生时辰，本次结果已降级为大概模式，适合做基础参考。"
         upgrade_hint = {
             "show": True,
-            "title": "Add birth time for a more precise reading",
-            "content": "Providing birth time can improve accuracy and produce more personalized suggestions.",
+            "title": "补充出生时辰可获得更精细的结果",
+            "content": "如果能补充出生时辰，系统会给出更贴合个人节奏的建议与提醒。",
             "affected_dimensions": ["work_study", "finance", "social", "health"],
         }
 
     bazi_summary = {
-        "year_pillar": "Jia Zi",
-        "month_pillar": "Yi Chou",
-        "day_pillar": "Bing Yin",
-        "hour_pillar": None if not has_birth_time else "Ding Mao",
+        "year_pillar": "甲子",
+        "month_pillar": "乙丑",
+        "day_pillar": "丙寅",
+        "hour_pillar": None if not has_birth_time else "丁卯",
     }
 
     wuxing_score = {
@@ -167,9 +167,9 @@ def analyze():
     }
 
     overall_advice = {
-        "suitable": "Good for steady progress, learning, and self-improvement.",
-        "avoid": "Avoid impulsive decisions and overcommitting your energy.",
-        "reminder": "Keep your routine balanced and pay attention to rest.",
+        "suitable": "适合稳步推进计划，优先做学习、整理和长期积累类事项。",
+        "avoid": "不宜冲动决策，也要避免同时摊开过多事务消耗精力。",
+        "reminder": "保持作息节奏稳定，先顾好体力与情绪，再谈效率。",
     }
 
     segs = []
@@ -181,9 +181,9 @@ def analyze():
                 "start_date": seg["start_date"],
                 "end_date": seg["end_date"],
                 "trend_alignment": trend,
-                "suitable": "A good period to move plans forward step by step.",
-                "avoid": "Avoid friction, arguments, and rushed choices.",
-                "reminder": "Protect your energy and keep a stable rhythm.",
+                "suitable": "这段时间适合按部就班推进手头计划，先做确定性高的事。",
+                "avoid": "避免争执、情绪化表态，以及为了赶进度而仓促拍板。",
+                "reminder": "留意精力分配，保持节奏感，比一口气冲刺更重要。",
                 "dimensions": {
                     "work_study": "high" if trend == "aligned" else "medium",
                     "finance": "medium",
@@ -195,7 +195,7 @@ def analyze():
 
     result = {
         "request_id": str(uuid.uuid4()),
-        "disclaimer": "This result is for reference only and does not replace medical, legal, or financial advice.",
+        "disclaimer": "本结果仅供参考，不替代医疗、法律或财务等专业意见。",
         "precision_level": precision_level,
         "precision_note": precision_note,
         "bazi_summary": bazi_summary,
