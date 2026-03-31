@@ -39,7 +39,7 @@ def test_health_endpoint(client):
     assert response.status_code == 200
     assert data["status"] == "ok"
     assert data["service"] == "hxz-fortune"
-    assert data["version"] == "v1.4.0"
+    assert data["version"] == "v1.4.1"
 
 
 def test_analyze_valid(client):

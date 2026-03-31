@@ -269,6 +269,19 @@ createApp({
           start_date: payload.start_date,
           end_date: payload.end_date,
         },
+        input_snapshot: {
+          name: payload.name || "",
+          gender: payload.gender,
+          calendar_type: payload.calendar_type,
+          birth_date: payload.birth_date,
+          birth_time: payload.birth_time || "",
+          birth_place: payload.birth_place || "",
+          has_birth_time: payload.has_birth_time,
+          precision_mode: payload.precision_mode,
+          analysis_mode: payload.analysis_mode,
+          start_date: payload.start_date,
+          end_date: payload.end_date,
+        },
       };
     }
 
@@ -304,6 +317,28 @@ createApp({
       applyResult(selected);
       readingMode.value = "summary";
       view.value = "result";
+      showHistory.value = false;
+    }
+
+    function refillFormFromHistory(index) {
+      const records = readHistory();
+      const selected = records[index];
+      const snapshot = selected?.input_snapshot;
+      if (!snapshot) return;
+
+      form.name = snapshot.name || "";
+      form.gender = snapshot.gender || "";
+      form.calendar_type = snapshot.calendar_type || "solar";
+      form.birth_date = snapshot.birth_date || "";
+      form.birth_time = snapshot.birth_time || "";
+      form.birth_place = snapshot.birth_place || "";
+      form.has_birth_time = Boolean(snapshot.has_birth_time);
+      form.precision_mode = snapshot.precision_mode || "standard";
+      form.analysis_mode = snapshot.analysis_mode || "standard";
+      form.start_date = snapshot.start_date || defaultRange.start;
+      form.end_date = snapshot.end_date || defaultRange.end;
+      clearErrors();
+      view.value = "input";
       showHistory.value = false;
     }
 
@@ -392,6 +427,7 @@ createApp({
       onSubmit,
       readingGuide,
       readingMode,
+      refillFormFromHistory,
       removeHistory,
       resetForm,
       result,

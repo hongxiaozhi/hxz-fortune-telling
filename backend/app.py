@@ -48,7 +48,7 @@ def health():
         {
             "status": "ok",
             "service": "hxz-fortune",
-            "version": "v1.4.0",
+            "version": "v1.4.1",
         }
     )
 

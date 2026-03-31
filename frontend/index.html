@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">HXZ Fortune</p>
         <h1 class="logo">运势简析</h1>
-        <p class="build-badge">当前版本 v1.4.0</p>
+        <p class="build-badge">当前版本 v1.4.1</p>
       </div>
       <button class="history-btn" type="button" @click="toggleHistory">
         {{ showHistory ? '收起记录' : '历史记录' }}
@@ -127,6 +127,7 @@
             <li>标准模式适合先快速获取方向性建议，即使输入还不完整也能先开始判断近期安排。</li>
             <li>进阶模式适合你已经掌握更多出生信息，想看到“输入完整度提升后结果为什么更细”。</li>
             <li>快捷时间段入口适合做复盘时的快速重算，避免重复手动选择日期。</li>
+            <li>历史抽屉里的“回填输入”可以把旧记录直接带回表单，方便你在原条件上微调后重新分析。</li>
           </ul>
         </aside>
       </section>
@@ -360,6 +361,7 @@
             <div class="history-actions">
               <button type="button" class="ghost-btn" @click="loadHistory(idx)">查看</button>
               <button type="button" class="ghost-btn" @click="setCompareRecord(idx)">设为对比</button>
+              <button type="button" class="ghost-btn" @click="refillFormFromHistory(idx)">回填输入</button>
               <button type="button" class="ghost-btn danger-btn" @click="removeHistory(idx)">删除</button>
             </div>
           </div>
