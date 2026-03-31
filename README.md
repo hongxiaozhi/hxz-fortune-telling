@@ -4,10 +4,10 @@
 
 ## 项目结构
 
-- `backend/`: Flask API
-- `frontend/`: 静态前端页面
-- `deploy/site-template/Dockerfile`: 容器镜像模板
-- `docs/`: 路线图、版本计划、变更记录
+- `backend/`：Flask API
+- `frontend/`：静态前端页面
+- `deploy/site-template/Dockerfile`：容器镜像模板
+- `docs/`：路线图、版本计划、变更记录
 
 ## 运行方式
 
@@ -42,11 +42,11 @@ pip install pytest
 
 ## 文档分层
 
-- `README.md`: 如何运行项目
-- `PROJECT_CONTEXT.md`: 项目现状与技术背景
-- `docs/ROADMAP.md`: 后续版本规划
-- `docs/releases/`: 当前版本执行计划
-- `docs/CHANGELOG.md`: 实际发布记录
+- `README.md`：如何运行项目
+- `PROJECT_CONTEXT.md`：项目现状与技术背景
+- `docs/ROADMAP.md`：后续版本规划
+- `docs/releases/`：当前版本执行计划
+- `docs/CHANGELOG.md`：实际发布记录
 
 ## 文档规范
 
@@ -68,7 +68,7 @@ pip install pytest
 - 服务启动方式：根目录 `docker compose up -d --build hxz-fortune`
 - 对外入口：Nginx 反向代理到 `127.0.0.1:5002`
 
-当前产品已进入 `v1.3`，第一批优化聚焦出生地输入、标准 / 进阶分析模式，以及结果页“本次分析依据”摘要，不引入历史对比或复杂账户能力。
+当前产品已进入 `v1.3`，这一阶段聚焦出生地输入、标准 / 进阶分析模式，以及结果页“本次分析依据”摘要和轻量差异提示，不引入历史对比或复杂账户能力。
 
 如需查看线上问题处理过程，可参考：
 

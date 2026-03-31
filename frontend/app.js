@@ -9,24 +9,9 @@ createApp({
     const errors = reactive({});
     const readingMode = ref("summary");
 
-    const levelLabels = {
-      high: "高",
-      medium: "中",
-      low: "低",
-    };
-
-    const wuxingLabels = {
-      wood: "木",
-      fire: "火",
-      earth: "土",
-      metal: "金",
-      water: "水",
-    };
-
-    const analysisModeLabels = {
-      standard: "标准模式",
-      advanced: "进阶模式",
-    };
+    const levelLabels = { high: "高", medium: "中", low: "低" };
+    const wuxingLabels = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+    const analysisModeLabels = { standard: "标准模式", advanced: "进阶模式" };
 
     const today = new Date();
     const defaultStart = today.toISOString().slice(0, 10);
@@ -51,46 +36,65 @@ createApp({
       const segments = result.segments || [];
       return isSummaryMode.value ? segments.slice(0, 3) : segments;
     });
-    const deviatedCount = computed(() => {
-      const segments = result.segments || [];
-      return segments.filter((seg) => seg.trend_alignment === "deviated").length;
+
+    const inputModeGuide = computed(() => {
+      if (form.analysis_mode === "advanced") {
+        if (!form.has_birth_time && !form.birth_place.trim()) {
+          return "你已切到进阶模式，但当前缺少出生时辰和出生地，只能得到轻量差异提示，结果不会明显细化。";
+        }
+        if (!form.has_birth_time || !form.birth_place.trim()) {
+          return "你已切到进阶模式，补齐出生时辰和出生地后，结果会更容易体现和标准模式的差异。";
+        }
+        return "当前输入已经适合进阶模式，结果会更强调输入完整度带来的节奏差异与提醒变化。";
+      }
+      return "标准模式适合先快速看方向，输入不完整时也能先得到可执行建议。";
     });
+
+    const contextSummary = computed(() => {
+      const context = result.analysis_context;
+      if (!context) return "";
+      if (context.analysis_mode === "advanced" && context.has_birth_time && context.birth_place) {
+        return "这次使用了进阶模式、出生时辰和出生地，当前结果会比标准模式更细，更强调分段节奏差异。";
+      }
+      if (context.analysis_mode === "advanced") {
+        return "这次使用了进阶模式，但输入仍不完整，所以结果以轻量差异提示为主，不把细节判断说得过满。";
+      }
+      return "这次使用标准模式，结果以方向性建议为主，适合先建立整体安排顺序。";
+    });
+
     const readingGuide = computed(() => ({
       title: isSummaryMode.value ? "先看能不能马上执行" : "按完整结构逐项判断",
       description: isSummaryMode.value
-        ? "简明模式优先保留一句话结论、整体建议和最近几段重点提醒，适合先判断近期安排是否要收紧或推进。"
-        : "详细模式会保留完整分段、五行分布和维度提示，适合你在已经知道大方向后，继续核对依据和细节差异。",
+        ? "简明模式优先保留一句话结论、整体建议和最近几段重点提醒，适合先判断近期安排是收紧还是推进。"
+        : "详细模式会保留完整分段、五行分布和维度提示，适合你在知道大方向后继续核对依据和差异。",
     }));
+
     const riskGuide = computed(() => {
       const hasPrecisionLimit = Boolean(result.precision_note);
-      const hasUpgradeHint = Boolean(result.upgrade_hint?.show);
-      const deviationTotal = deviatedCount.value;
+      const upgradeVisible = Boolean(result.upgrade_hint?.show);
+      const segments = result.segments || [];
+      const deviatedCount = segments.filter((segment) => segment.trend_alignment === "deviated").length;
 
-      if (hasPrecisionLimit && deviationTotal > 0) {
-        return "当前结果包含精度限制，而且部分分段与整体趋势存在偏移，适合把它当作提醒清单，而不是确定结论。";
+      if (hasPrecisionLimit && deviatedCount > 0) {
+        return "当前结果既存在精度限制，也存在阶段波动，适合把它当作提醒清单，而不是确定结论。";
       }
       if (hasPrecisionLimit) {
-        return "当前结果带有精度限制，适合用于提前规避明显风险，不适合做过细的时间点判断。";
+        return "当前结果带有输入完整度限制，更适合用来提前规避明显风险，不适合做过细的时间点判断。";
       }
-      if (deviationTotal > 0) {
-        return `有 ${deviationTotal} 个分段与整体趋势不完全一致，说明近期节奏可能波动，阅读时要以分段提醒为准。`;
+      if (deviatedCount > 0) {
+        return `当前有 ${deviatedCount} 个分段与整体趋势存在偏移，阅读时要优先看分段提醒，不要只看一句话总结。`;
       }
-      if (hasUpgradeHint) {
-        return "当前结果已经能给出方向性建议，但如果你要做更细的安排，可以补充更完整信息后再复看。";
+      if (upgradeVisible) {
+        return "当前结果已能给出方向性建议，但如果你需要更细的安排参考，仍建议补齐关键信息后再复看。";
       }
       return "当前结果更适合作为近期安排的参考顺序，而不是替代你对现实条件的判断。";
     });
+
     const usageGuide = computed(() => {
       if (isSummaryMode.value) {
-        return "先把“宜 / 忌 / 提醒”转成 1 到 2 个可执行动作，再决定这周是否需要切到详细模式补看依据。";
+        return "先把“宜 / 忌 / 提醒”转换成 1 到 2 个可执行动作，再决定这周是否要切到详细模式补看依据。";
       }
       return "详细模式更适合复查：先看整体建议，再看分段差异，最后参考五行和维度信息，不建议跳着读。";
-    });
-    const inputModeGuide = computed(() => {
-      if (form.analysis_mode === "advanced") {
-        return "进阶模式更适合你已经知道出生地、出生时辰，且希望比较不同输入完整度对结果细节的影响。";
-      }
-      return "标准模式适合先获取方向性建议，输入不完整时也能较快得到可读结果。";
     });
 
     function clearErrors() {
@@ -122,17 +126,14 @@ createApp({
         errors.gender = "请选择性别。";
         ok = false;
       }
-
       if (!form.birth_date) {
         errors.birth_date = "请选择出生日期。";
         ok = false;
       }
-
       if (form.birth_place && form.birth_place.trim().length > 30) {
         errors.birth_place = "出生地最多填写 30 个字符。";
         ok = false;
       }
-
       if (!form.start_date || !form.end_date) {
         errors.date_range = "请选择完整的分析区间。";
         ok = false;
@@ -140,7 +141,6 @@ createApp({
         const startDate = new Date(form.start_date);
         const endDate = new Date(form.end_date);
         const diffDays = (endDate - startDate) / 86400000;
-
         if (startDate > endDate) {
           errors.date_range = "开始日期不能晚于结束日期。";
           ok = false;
@@ -149,17 +149,14 @@ createApp({
           ok = false;
         }
       }
-
       if (form.has_birth_time && !form.birth_time) {
         errors.birth_time = "已勾选出生时辰时，需要填写出生时间。";
         ok = false;
       }
-
       if (!form.has_birth_time && form.birth_time) {
         errors.birth_time = "未勾选出生时辰时，请清空出生时间。";
         ok = false;
       }
-
       return ok;
     }
 
@@ -185,19 +182,14 @@ createApp({
     }
 
     function applyResult(data) {
-      Object.keys(result).forEach((key) => {
-        delete result[key];
-      });
+      Object.keys(result).forEach((key) => delete result[key]);
       Object.assign(result, data);
     }
 
     function loadHistory(index) {
       const records = JSON.parse(localStorage.getItem("hxz_fortune_history") || "[]");
       const selected = records[index];
-      if (!selected) {
-        return;
-      }
-
+      if (!selected) return;
       applyResult(selected);
       readingMode.value = "summary";
       view.value = "result";
@@ -209,16 +201,10 @@ createApp({
     }
 
     async function onSubmit() {
-      if (!validate()) {
-        return;
-      }
-
+      if (!validate()) return;
       view.value = "loading";
-
       try {
-        const payload = normalizePayload();
-        const response = await axios.post("/api/fortune/analyze", payload);
-
+        const response = await axios.post("/api/fortune/analyze", normalizePayload());
         applyResult(response.data);
         saveHistory(response.data);
         readingMode.value = "summary";
@@ -234,6 +220,7 @@ createApp({
 
     return {
       analysisModeLabels,
+      contextSummary,
       errors,
       form,
       history,

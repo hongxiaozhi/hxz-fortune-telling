@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">HXZ Fortune</p>
         <h1 class="logo">运势简析</h1>
-        <p class="build-badge">当前版本 v1.3.0</p>
+        <p class="build-badge">当前版本 v1.3.1</p>
       </div>
       <button class="history-btn" type="button" @click="toggleHistory">
         {{ showHistory ? '收起记录' : '历史记录' }}
@@ -26,7 +26,7 @@
         <div class="section-title">
           <p class="section-kicker">v1.3 输入精度增强</p>
           <h2>填写基础信息</h2>
-          <p>这一版开始增强输入差异提示，帮助你看清楚出生地、时辰和分析模式会如何影响结果细节。</p>
+          <p>这一版重点不在重做算法，而是在现有结果结构内，让标准模式和进阶模式看起来更有差异。</p>
         </div>
 
         <form @submit.prevent="onSubmit" novalidate>
@@ -118,9 +118,9 @@
           <h3>输入提示</h3>
           <p class="mode-copy">{{ inputModeGuide }}</p>
           <ul>
-            <li>标准模式适合先快速获得方向性建议。</li>
-            <li>进阶模式更适合你已经掌握较完整出生信息，想看输入差异如何影响结果细节。</li>
-            <li>出生地暂时只用于增强输入上下文提示，不会引入复杂外部数据源。</li>
+            <li>标准模式适合先快速获取方向性建议，即使输入还不完整也能先开始判断近期安排。</li>
+            <li>进阶模式适合你已经掌握更多出生信息，想看到“输入完整度提升后结果为什么更细”。</li>
+            <li>如果切到进阶模式但没有补齐出生时辰或出生地，系统仍会返回结果，但会明确提示差异能力受限。</li>
           </ul>
         </aside>
       </section>
@@ -128,7 +128,7 @@
       <section v-if="view === 'loading'" class="card loading-card">
         <div class="loading-dot"></div>
         <h2>分析中</h2>
-        <p>正在整理整体趋势、输入差异提示和分段建议，请稍候。</p>
+        <p>正在整理整体趋势、模式差异提示和分段建议，请稍候。</p>
       </section>
 
       <section v-if="view === 'result'" class="card result-card">
@@ -148,13 +148,14 @@
           <div class="section-title-inline">
             <div>
               <p class="section-kicker">本次分析依据</p>
-              <h3>本次结果用了哪些输入条件</h3>
+              <h3>这次用了哪些输入条件</h3>
             </div>
           </div>
           <div class="context-tags">
             <span class="context-tag">{{ analysisModeLabels[result.analysis_context?.analysis_mode] || '标准模式' }}</span>
             <span class="context-tag" v-for="item in result.analysis_context?.inputs_summary || []" :key="item">{{ item }}</span>
           </div>
+          <p>{{ contextSummary }}</p>
           <p class="muted">{{ result.mode_hint }}</p>
         </section>
 
@@ -174,7 +175,7 @@
             </button>
           </div>
           <p class="muted">
-            {{ isSummaryMode ? '优先展示最值得先看的结论和近阶段建议。' : '展示完整结果结构，便于逐项查看依据。' }}
+            {{ isSummaryMode ? '优先显示一句话结论、整体建议和最近几段提醒。' : '显示完整结果结构，便于逐项核对依据与差异。' }}
           </p>
         </section>
 
@@ -191,12 +192,12 @@
             </article>
             <article class="guidance-card warning-card">
               <span class="guidance-label">风险提示</span>
-              <h4>不要把当前结果当成确定结论</h4>
+              <h4>不要把当前结果当成绝对判断</h4>
               <p>{{ riskGuide }}</p>
             </article>
             <article class="guidance-card">
               <span class="guidance-label">使用建议</span>
-              <h4>把建议转成可执行动作</h4>
+              <h4>把结论转成可执行动作</h4>
               <p>{{ usageGuide }}</p>
             </article>
           </div>
