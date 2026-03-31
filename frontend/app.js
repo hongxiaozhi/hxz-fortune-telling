@@ -1,4 +1,4 @@
-const { createApp, reactive, ref, onMounted } = Vue;
+const { createApp, reactive, ref, computed, onMounted } = Vue;
 
 createApp({
   setup() {
@@ -7,6 +7,7 @@ createApp({
     const result = reactive({});
     const history = ref([]);
     const errors = reactive({});
+    const readingMode = ref("summary");
 
     const levelLabels = {
       high: "高",
@@ -36,6 +37,55 @@ createApp({
       precision_mode: "standard",
       start_date: defaultStart,
       end_date: defaultEnd,
+    });
+
+    const isSummaryMode = computed(() => readingMode.value === "summary");
+    const visibleSegments = computed(() => {
+      const segments = result.segments || [];
+      return isSummaryMode.value ? segments.slice(0, 3) : segments;
+    });
+    const deviatedCount = computed(() => {
+      const segments = result.segments || [];
+      return segments.filter((seg) => seg.trend_alignment === "deviated").length;
+    });
+    const readingGuide = computed(() => ({
+      title: isSummaryMode.value ? "先看能不能马上执行" : "按完整结构逐项判断",
+      description: isSummaryMode.value
+        ? "简明模式优先保留一句话结论、整体建议和最近几段重点提醒，适合先判断近期安排是否要收紧或推进。"
+        : "详细模式会保留完整分段、五行分布和维度提示，适合你在已经知道大方向后，继续核对依据和细节差异。",
+      action: isSummaryMode.value
+        ? "如果最近 3 段里已经连续出现“避”或提醒偏多，先以保守调整为主，再决定是否切到详细模式查看原因。"
+        : "先看整体建议，再逐段对照时间范围和维度标签，不要只因为单一分段乐观或悲观就放大判断。",
+    }));
+    const riskGuide = computed(() => {
+      const hasPrecisionLimit = Boolean(result.precision_note);
+      const hasUpgradeHint = Boolean(result.upgrade_hint?.show);
+      const deviationTotal = deviatedCount.value;
+
+      if (hasPrecisionLimit && deviationTotal > 0) {
+        return "当前结果包含精度限制，而且部分分段与整体趋势存在偏移，适合把它当作提醒清单，而不是确定结论。";
+      }
+
+      if (hasPrecisionLimit) {
+        return "当前结果带有精度限制，适合用于提前规避明显风险，不适合做过细的时间点判断。";
+      }
+
+      if (deviationTotal > 0) {
+        return `有 ${deviationTotal} 个分段与整体趋势不完全一致，说明近期节奏可能波动，阅读时要以分段提醒为准。`;
+      }
+
+      if (hasUpgradeHint) {
+        return "当前结果已经能给出方向性建议，但如果你要做更细的安排，可以补充更完整信息后再复看。";
+      }
+
+      return "当前结果更适合作为近期安排的参考顺序，而不是替代你对现实条件的判断。";
+    });
+    const usageGuide = computed(() => {
+      if (isSummaryMode.value) {
+        return "先把“宜 / 忌 / 提醒”转成 1 到 2 个可执行动作，再决定这周是否需要切到详细模式补看依据。";
+      }
+
+      return "详细模式更适合复查：先看整体建议，再看分段差异，最后参考五行和维度信息，不建议跳着读。";
     });
 
     function clearErrors() {
@@ -121,6 +171,13 @@ createApp({
       history.value = JSON.parse(localStorage.getItem("hxz_fortune_history") || "[]");
     }
 
+    function applyResult(data) {
+      Object.keys(result).forEach((key) => {
+        delete result[key];
+      });
+      Object.assign(result, data);
+    }
+
     function loadHistory(index) {
       const records = JSON.parse(localStorage.getItem("hxz_fortune_history") || "[]");
       const selected = records[index];
@@ -128,10 +185,8 @@ createApp({
         return;
       }
 
-      Object.keys(result).forEach((key) => {
-        delete result[key];
-      });
-      Object.assign(result, selected);
+      applyResult(selected);
+      readingMode.value = "summary";
       view.value = "result";
       showHistory.value = false;
     }
@@ -151,17 +206,13 @@ createApp({
         const payload = normalizePayload();
         const response = await axios.post("/api/fortune/analyze", payload);
 
-        Object.keys(result).forEach((key) => {
-          delete result[key];
-        });
-        Object.assign(result, response.data);
-
+        applyResult(response.data);
         saveHistory(response.data);
+        readingMode.value = "summary";
         view.value = "result";
       } catch (error) {
         view.value = "input";
-        const message =
-          error.response?.data?.message || "分析请求失败，请稍后重试。";
+        const message = error.response?.data?.message || "分析请求失败，请稍后重试。";
         window.alert(message);
       }
     }
@@ -172,14 +223,20 @@ createApp({
       errors,
       form,
       history,
+      isSummaryMode,
       levelLabels,
       loadHistory,
       onSubmit,
+      readingGuide,
+      readingMode,
       resetForm,
       result,
+      riskGuide,
       showHistory,
       toggleHistory,
+      usageGuide,
       view,
+      visibleSegments,
       wuxingLabels,
     };
   },

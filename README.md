@@ -4,10 +4,10 @@
 
 ## 项目结构
 
-- `backend/`：Flask API
-- `frontend/`：静态前端页面
-- `deploy/site-template/Dockerfile`：容器镜像模板
-- `docs/`：路线图、版本计划、变更记录
+- `backend/`: Flask API
+- `frontend/`: 静态前端页面
+- `deploy/site-template/Dockerfile`: 容器镜像模板
+- `docs/`: 路线图、版本计划、变更记录
 
 ## 运行方式
 
@@ -34,13 +34,19 @@ docker compose up -d --build hxz-fortune
 pytest backend/tests/test_fortune_api.py
 ```
 
+如果本地未安装 `pytest`，先执行：
+
+```bash
+pip install pytest
+```
+
 ## 文档分层
 
-- `README.md`：如何运行项目
-- `PROJECT_CONTEXT.md`：项目现状与技术背景
-- `docs/ROADMAP.md`：未来版本路线
-- `docs/releases/`：当前版本执行计划
-- `docs/CHANGELOG.md`：实际发布记录
+- `README.md`: 如何运行项目
+- `PROJECT_CONTEXT.md`: 项目现状与技术背景
+- `docs/ROADMAP.md`: 后续版本规划
+- `docs/releases/`: 当前版本执行计划
+- `docs/CHANGELOG.md`: 实际发布记录
 
 ## 文档规范
 
@@ -50,11 +56,19 @@ pytest backend/tests/test_fortune_api.py
 
 ## 部署约定
 
-当前仓库结构已经统一到根目录 `docker-compose.yml`。
-不再推荐：
+当前仓库结构已经统一到根目录 `docker-compose.yml`，不再推荐：
 
 - 在子项目内单独维护启动脚本
 - 使用旧的 `systemd + gunicorn` 模板
+
+当前线上部署链路：
+
+- GitHub Actions 工作流：`.github/workflows/deploy.yml`
+- 服务器部署目录：`/opt/hxz`
+- 服务启动方式：根目录 `docker compose up -d --build hxz-fortune`
+- 对外入口：Nginx 反向代理到 `127.0.0.1:5002`
+
+当前产品已进入 `v1.2`，当前优化聚焦结果页“简明 / 详细”阅读模式，以及阅读引导与风险提示文案，不改变现有接口调用方式。
 
 如需查看线上问题处理过程，可参考：
 

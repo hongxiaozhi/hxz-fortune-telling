@@ -175,6 +175,7 @@ select:focus {
 .main-btn,
 .secondary-btn,
 .history-btn,
+.mode-btn,
 .ghost-btn,
 .history-item {
   border: 0;
@@ -189,6 +190,19 @@ select:focus {
   background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
   color: #fff8f0;
   box-shadow: 0 10px 24px rgba(112, 65, 29, 0.22);
+}
+
+.mode-btn {
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.mode-btn.active {
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+  color: #fff8f0;
+  box-shadow: 0 10px 24px rgba(112, 65, 29, 0.16);
 }
 
 .secondary-btn,
@@ -214,6 +228,21 @@ select:focus {
   margin-top: 28px;
   padding: 18px 20px;
   border-radius: 18px;
+}
+
+.reading-mode-panel {
+  margin-top: 20px;
+}
+
+.guidance-panel .muted {
+  margin: 16px 0 0;
+}
+
+.mode-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .precision-card {
@@ -293,6 +322,43 @@ select:focus {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid var(--line);
   border-radius: 20px;
+}
+
+.guidance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.guidance-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+}
+
+.guidance-card h4 {
+  margin: 10px 0 8px;
+  font-size: 18px;
+}
+
+.guidance-card p {
+  margin: 0;
+}
+
+.guidance-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(159, 95, 44, 0.1);
+  color: var(--brand-deep);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.warning-card {
+  background: linear-gradient(180deg, rgba(255, 241, 223, 0.9), rgba(255, 255, 255, 0.78));
 }
 
 .bazi-grid {
@@ -485,7 +551,8 @@ select:focus {
   }
 
   .form-grid,
-  .result-grid {
+  .result-grid,
+  .guidance-grid {
     grid-template-columns: 1fr;
   }
 

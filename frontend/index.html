@@ -23,7 +23,7 @@
     <main class="page-shell">
       <section v-if="view === 'input'" class="card input-card">
         <div class="section-title">
-          <p class="section-kicker">v1.1 主链路</p>
+          <p class="section-kicker">v1.2 结果表达优化</p>
           <h2>填写基础信息</h2>
           <p>先完成基础输入，再获取未来时间段的简明建议。</p>
         </div>
@@ -122,10 +122,67 @@
         </div>
 
         <section class="result-hero">
-          <p class="section-kicker">先结论后细节</p>
+          <p class="section-kicker">先结论后依据</p>
           <h2>一句话结论</h2>
           <p class="hero-text">{{ result.overall_advice?.suitable }}</p>
           <p class="hero-subtext">{{ result.overall_advice?.reminder }}</p>
+        </section>
+
+        <section class="panel reading-mode-panel">
+          <div class="section-title-inline">
+            <div>
+              <p class="section-kicker">阅读模式</p>
+              <h3>先看重点，还是看完整细节</h3>
+            </div>
+          </div>
+          <div class="mode-switch">
+            <button
+              type="button"
+              class="mode-btn"
+              :class="{ active: readingMode === 'summary' }"
+              @click="readingMode = 'summary'"
+            >
+              简明模式
+            </button>
+            <button
+              type="button"
+              class="mode-btn"
+              :class="{ active: readingMode === 'detail' }"
+              @click="readingMode = 'detail'"
+            >
+              详细模式
+            </button>
+          </div>
+          <p class="muted">
+            {{ isSummaryMode ? '优先展示最值得先看的结论和近阶段建议。' : '展示完整结果结构，便于逐项查看依据。' }}
+          </p>
+        </section>
+
+        <section class="panel guidance-panel">
+          <div class="section-title">
+            <p class="section-kicker">阅读引导</p>
+            <h3>先理解怎么用，再看结果强弱</h3>
+          </div>
+          <div class="guidance-grid">
+            <article class="guidance-card">
+              <span class="guidance-label">如何阅读</span>
+              <h4>{{ readingGuide.title }}</h4>
+              <p>{{ readingGuide.description }}</p>
+            </article>
+            <article class="guidance-card warning-card">
+              <span class="guidance-label">风险提示</span>
+              <h4>不要把当前结果当成确定结论</h4>
+              <p>{{ riskGuide }}</p>
+            </article>
+            <article class="guidance-card">
+              <span class="guidance-label">使用建议</span>
+              <h4>把建议转成可执行动作</h4>
+              <p>{{ usageGuide }}</p>
+            </article>
+          </div>
+          <p class="muted">
+            当前版本仍以建议式表达为主，不替代现实决策、医学建议或专业咨询。
+          </p>
         </section>
 
         <section v-if="result.precision_note" class="precision-note">
@@ -138,7 +195,65 @@
           <p>{{ result.upgrade_hint.content }}</p>
         </section>
 
-        <section class="result-grid">
+        <section class="panel advice-panel">
+          <h3>整体建议</h3>
+          <div class="advice-item">
+            <span class="advice-label">宜</span>
+            <p>{{ result.overall_advice?.suitable }}</p>
+          </div>
+          <div class="advice-item">
+            <span class="advice-label">忌</span>
+            <p>{{ result.overall_advice?.avoid }}</p>
+          </div>
+          <div class="advice-item">
+            <span class="advice-label">提醒</span>
+            <p>{{ result.overall_advice?.reminder }}</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-title section-title-inline">
+            <div>
+              <p class="section-kicker">未来区间</p>
+              <h3>{{ isSummaryMode ? '优先看最近几段建议' : '分段建议' }}</h3>
+            </div>
+            <p class="muted">
+              {{ isSummaryMode ? '简明模式默认展示前 3 段。' : '按 7 天为一段展示完整结果。' }}
+            </p>
+          </div>
+
+          <div class="segment-list">
+            <article v-for="seg in visibleSegments" :key="seg.segment_index" class="segment">
+              <div class="segment-header">
+                <div>
+                  <h4>第 {{ seg.segment_index }} 段</h4>
+                  <p>{{ seg.start_date }} 至 {{ seg.end_date }}</p>
+                </div>
+                <span
+                  class="segment-badge"
+                  :class="{ warning: seg.trend_alignment === 'deviated' }"
+                >
+                  {{ seg.trend_alignment === 'deviated' ? '与整体趋势有偏离' : '与整体趋势一致' }}
+                </span>
+              </div>
+
+              <div class="segment-body">
+                <p><strong>宜：</strong>{{ seg.suitable }}</p>
+                <p><strong>忌：</strong>{{ seg.avoid }}</p>
+                <p><strong>提醒：</strong>{{ seg.reminder }}</p>
+              </div>
+
+              <div v-if="!isSummaryMode" class="dimensions">
+                <span>学业 / 事业：{{ levelLabels[seg.dimensions.work_study] || seg.dimensions.work_study }}</span>
+                <span>财运：{{ levelLabels[seg.dimensions.finance] || seg.dimensions.finance }}</span>
+                <span>社交：{{ levelLabels[seg.dimensions.social] || seg.dimensions.social }}</span>
+                <span>健康：{{ levelLabels[seg.dimensions.health] || seg.dimensions.health }}</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section v-if="!isSummaryMode" class="result-grid">
           <article class="panel">
             <h3>八字简表</h3>
             <dl class="bazi-grid">
@@ -170,62 +285,6 @@
               </li>
             </ul>
           </article>
-        </section>
-
-        <section class="panel advice-panel">
-          <h3>整体建议</h3>
-          <div class="advice-item">
-            <span class="advice-label">宜</span>
-            <p>{{ result.overall_advice?.suitable }}</p>
-          </div>
-          <div class="advice-item">
-            <span class="advice-label">忌</span>
-            <p>{{ result.overall_advice?.avoid }}</p>
-          </div>
-          <div class="advice-item">
-            <span class="advice-label">提醒</span>
-            <p>{{ result.overall_advice?.reminder }}</p>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="section-title section-title-inline">
-            <div>
-              <p class="section-kicker">未来区间</p>
-              <h3>分段建议</h3>
-            </div>
-            <p class="muted">按 7 天为一段展示</p>
-          </div>
-
-          <div class="segment-list">
-            <article v-for="seg in result.segments" :key="seg.segment_index" class="segment">
-              <div class="segment-header">
-                <div>
-                  <h4>第 {{ seg.segment_index }} 段</h4>
-                  <p>{{ seg.start_date }} 至 {{ seg.end_date }}</p>
-                </div>
-                <span
-                  class="segment-badge"
-                  :class="{ warning: seg.trend_alignment === 'deviated' }"
-                >
-                  {{ seg.trend_alignment === 'deviated' ? '与整体趋势有偏离' : '与整体趋势一致' }}
-                </span>
-              </div>
-
-              <div class="segment-body">
-                <p><strong>宜：</strong>{{ seg.suitable }}</p>
-                <p><strong>忌：</strong>{{ seg.avoid }}</p>
-                <p><strong>提醒：</strong>{{ seg.reminder }}</p>
-              </div>
-
-              <div class="dimensions">
-                <span>学业 / 事业：{{ levelLabels[seg.dimensions.work_study] || seg.dimensions.work_study }}</span>
-                <span>财运：{{ levelLabels[seg.dimensions.finance] || seg.dimensions.finance }}</span>
-                <span>社交：{{ levelLabels[seg.dimensions.social] || seg.dimensions.social }}</span>
-                <span>健康：{{ levelLabels[seg.dimensions.health] || seg.dimensions.health }}</span>
-              </div>
-            </article>
-          </div>
         </section>
       </section>
     </main>
