@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">HXZ Fortune</p>
         <h1 class="logo">运势简析</h1>
-        <p class="build-badge">当前版本 v1.2.1</p>
+        <p class="build-badge">当前版本 v1.3.0</p>
       </div>
       <button class="history-btn" type="button" @click="toggleHistory">
         {{ showHistory ? '收起记录' : '历史记录' }}
@@ -24,9 +24,9 @@
     <main class="page-shell">
       <section v-if="view === 'input'" class="card input-card">
         <div class="section-title">
-          <p class="section-kicker">v1.2 结果表达优化</p>
+          <p class="section-kicker">v1.3 输入精度增强</p>
           <h2>填写基础信息</h2>
-          <p>先完成基础输入，再获取未来时间段的简明建议。</p>
+          <p>这一版开始增强输入差异提示，帮助你看清楚出生地、时辰和分析模式会如何影响结果细节。</p>
         </div>
 
         <form @submit.prevent="onSubmit" novalidate>
@@ -62,6 +62,20 @@
               <span class="error" v-if="errors.birth_date">{{ errors.birth_date }}</span>
             </div>
 
+            <div class="form-row">
+              <label for="birthPlace">出生地（可选）</label>
+              <input id="birthPlace" v-model.trim="form.birth_place" maxlength="30" placeholder="例如：杭州、苏州、广州">
+              <span class="error" v-if="errors.birth_place">{{ errors.birth_place }}</span>
+            </div>
+
+            <div class="form-row">
+              <label for="analysisMode">分析模式</label>
+              <select id="analysisMode" v-model="form.analysis_mode">
+                <option value="standard">标准模式</option>
+                <option value="advanced">进阶模式</option>
+              </select>
+            </div>
+
             <div class="form-row form-row-inline checkbox-row">
               <label class="checkbox-label">
                 <input type="checkbox" v-model="form.has_birth_time">
@@ -76,9 +90,9 @@
             </div>
 
             <div class="form-row">
-              <label for="precisionMode">分析模式</label>
+              <label for="precisionMode">精度模式</label>
               <select id="precisionMode" v-model="form.precision_mode">
-                <option value="standard">标准模式</option>
+                <option value="standard">标准精度</option>
                 <option value="approx">大概模式</option>
               </select>
             </div>
@@ -102,10 +116,11 @@
 
         <aside class="precision-card">
           <h3>输入提示</h3>
+          <p class="mode-copy">{{ inputModeGuide }}</p>
           <ul>
-            <li>标准模式建议填写出生时辰，结果会更完整。</li>
-            <li>不知道时辰也可以分析，但会自动降级为较低精度。</li>
-            <li>分析区间最长 180 天，默认提供未来 30 天。</li>
+            <li>标准模式适合先快速获得方向性建议。</li>
+            <li>进阶模式更适合你已经掌握较完整出生信息，想看输入差异如何影响结果细节。</li>
+            <li>出生地暂时只用于增强输入上下文提示，不会引入复杂外部数据源。</li>
           </ul>
         </aside>
       </section>
@@ -113,7 +128,7 @@
       <section v-if="view === 'loading'" class="card loading-card">
         <div class="loading-dot"></div>
         <h2>分析中</h2>
-        <p>正在整理整体趋势和分段建议，请稍候。</p>
+        <p>正在整理整体趋势、输入差异提示和分段建议，请稍候。</p>
       </section>
 
       <section v-if="view === 'result'" class="card result-card">
@@ -129,6 +144,20 @@
           <p class="hero-subtext">{{ result.overall_advice?.reminder }}</p>
         </section>
 
+        <section class="panel context-panel">
+          <div class="section-title-inline">
+            <div>
+              <p class="section-kicker">本次分析依据</p>
+              <h3>本次结果用了哪些输入条件</h3>
+            </div>
+          </div>
+          <div class="context-tags">
+            <span class="context-tag">{{ analysisModeLabels[result.analysis_context?.analysis_mode] || '标准模式' }}</span>
+            <span class="context-tag" v-for="item in result.analysis_context?.inputs_summary || []" :key="item">{{ item }}</span>
+          </div>
+          <p class="muted">{{ result.mode_hint }}</p>
+        </section>
+
         <section class="panel reading-mode-panel">
           <div class="section-title-inline">
             <div>
@@ -137,20 +166,10 @@
             </div>
           </div>
           <div class="mode-switch">
-            <button
-              type="button"
-              class="mode-btn"
-              :class="{ active: readingMode === 'summary' }"
-              @click="readingMode = 'summary'"
-            >
+            <button type="button" class="mode-btn" :class="{ active: readingMode === 'summary' }" @click="readingMode = 'summary'">
               简明模式
             </button>
-            <button
-              type="button"
-              class="mode-btn"
-              :class="{ active: readingMode === 'detail' }"
-              @click="readingMode = 'detail'"
-            >
+            <button type="button" class="mode-btn" :class="{ active: readingMode === 'detail' }" @click="readingMode = 'detail'">
               详细模式
             </button>
           </div>
@@ -181,9 +200,7 @@
               <p>{{ usageGuide }}</p>
             </article>
           </div>
-          <p class="muted">
-            当前版本仍以建议式表达为主，不替代现实决策、医学建议或专业咨询。
-          </p>
+          <p class="muted">当前版本仍以建议式表达为主，不替代现实决策、医学建议或专业咨询。</p>
         </section>
 
         <section v-if="result.precision_note" class="precision-note">
@@ -230,11 +247,8 @@
                   <h4>第 {{ seg.segment_index }} 段</h4>
                   <p>{{ seg.start_date }} 至 {{ seg.end_date }}</p>
                 </div>
-                <span
-                  class="segment-badge"
-                  :class="{ warning: seg.trend_alignment === 'deviated' }"
-                >
-                  {{ seg.trend_alignment === 'deviated' ? '与整体趋势有偏离' : '与整体趋势一致' }}
+                <span class="segment-badge" :class="{ warning: seg.trend_alignment === 'deviated' }">
+                  {{ seg.trend_alignment === 'deviated' ? '与整体趋势有偏移' : '与整体趋势一致' }}
                 </span>
               </div>
 

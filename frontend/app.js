@@ -23,6 +23,11 @@ createApp({
       water: "水",
     };
 
+    const analysisModeLabels = {
+      standard: "标准模式",
+      advanced: "进阶模式",
+    };
+
     const today = new Date();
     const defaultStart = today.toISOString().slice(0, 10);
     const defaultEnd = new Date(today.getTime() + 29 * 86400000).toISOString().slice(0, 10);
@@ -33,8 +38,10 @@ createApp({
       calendar_type: "solar",
       birth_date: "",
       birth_time: "",
+      birth_place: "",
       has_birth_time: false,
       precision_mode: "standard",
+      analysis_mode: "standard",
       start_date: defaultStart,
       end_date: defaultEnd,
     });
@@ -53,9 +60,6 @@ createApp({
       description: isSummaryMode.value
         ? "简明模式优先保留一句话结论、整体建议和最近几段重点提醒，适合先判断近期安排是否要收紧或推进。"
         : "详细模式会保留完整分段、五行分布和维度提示，适合你在已经知道大方向后，继续核对依据和细节差异。",
-      action: isSummaryMode.value
-        ? "如果最近 3 段里已经连续出现“避”或提醒偏多，先以保守调整为主，再决定是否切到详细模式查看原因。"
-        : "先看整体建议，再逐段对照时间范围和维度标签，不要只因为单一分段乐观或悲观就放大判断。",
     }));
     const riskGuide = computed(() => {
       const hasPrecisionLimit = Boolean(result.precision_note);
@@ -65,27 +69,28 @@ createApp({
       if (hasPrecisionLimit && deviationTotal > 0) {
         return "当前结果包含精度限制，而且部分分段与整体趋势存在偏移，适合把它当作提醒清单，而不是确定结论。";
       }
-
       if (hasPrecisionLimit) {
         return "当前结果带有精度限制，适合用于提前规避明显风险，不适合做过细的时间点判断。";
       }
-
       if (deviationTotal > 0) {
         return `有 ${deviationTotal} 个分段与整体趋势不完全一致，说明近期节奏可能波动，阅读时要以分段提醒为准。`;
       }
-
       if (hasUpgradeHint) {
         return "当前结果已经能给出方向性建议，但如果你要做更细的安排，可以补充更完整信息后再复看。";
       }
-
       return "当前结果更适合作为近期安排的参考顺序，而不是替代你对现实条件的判断。";
     });
     const usageGuide = computed(() => {
       if (isSummaryMode.value) {
         return "先把“宜 / 忌 / 提醒”转成 1 到 2 个可执行动作，再决定这周是否需要切到详细模式补看依据。";
       }
-
       return "详细模式更适合复查：先看整体建议，再看分段差异，最后参考五行和维度信息，不建议跳着读。";
+    });
+    const inputModeGuide = computed(() => {
+      if (form.analysis_mode === "advanced") {
+        return "进阶模式更适合你已经知道出生地、出生时辰，且希望比较不同输入完整度对结果细节的影响。";
+      }
+      return "标准模式适合先获取方向性建议，输入不完整时也能较快得到可读结果。";
     });
 
     function clearErrors() {
@@ -100,8 +105,10 @@ createApp({
       form.calendar_type = "solar";
       form.birth_date = "";
       form.birth_time = "";
+      form.birth_place = "";
       form.has_birth_time = false;
       form.precision_mode = "standard";
+      form.analysis_mode = "standard";
       form.start_date = defaultStart;
       form.end_date = defaultEnd;
       clearErrors();
@@ -118,6 +125,11 @@ createApp({
 
       if (!form.birth_date) {
         errors.birth_date = "请选择出生日期。";
+        ok = false;
+      }
+
+      if (form.birth_place && form.birth_place.trim().length > 30) {
+        errors.birth_place = "出生地最多填写 30 个字符。";
         ok = false;
       }
 
@@ -156,6 +168,7 @@ createApp({
         ...form,
         name: form.name || null,
         birth_time: form.has_birth_time ? form.birth_time : null,
+        birth_place: form.birth_place.trim() || null,
       };
     }
 
@@ -220,9 +233,11 @@ createApp({
     onMounted(loadHistoryList);
 
     return {
+      analysisModeLabels,
       errors,
       form,
       history,
+      inputModeGuide,
       isSummaryMode,
       levelLabels,
       loadHistory,

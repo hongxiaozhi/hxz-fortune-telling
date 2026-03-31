@@ -44,7 +44,7 @@ def health():
         {
             "status": "ok",
             "service": "hxz-fortune",
-            "version": "v1.1.1",
+            "version": "v1.3.0",
         }
     )
 
@@ -75,6 +75,16 @@ def validate_and_segment(data):
 
     if "precision_mode" in data and data["precision_mode"] not in [None, "", "approx", "standard"]:
         return "Invalid precision_mode value", None
+
+    if "analysis_mode" in data and data["analysis_mode"] not in [None, "", "standard", "advanced"]:
+        return "Invalid analysis_mode value", None
+
+    birth_place = data.get("birth_place")
+    if birth_place not in [None, "", "null"]:
+        if not isinstance(birth_place, str):
+            return "birth_place must be a string", None
+        if len(birth_place.strip()) > 30:
+            return "birth_place length cannot exceed 30", None
 
     date_re = re.compile(r"^\d{4}-\d{2}-\d{2}$")
     for field in ["birth_date", "start_date", "end_date"]:
@@ -137,7 +147,10 @@ def analyze():
         return jsonify({"error": "validation_error", "message": err}), 400
 
     precision_mode = data.get("precision_mode", "standard")
+    analysis_mode = data.get("analysis_mode", "standard")
     has_birth_time = data.get("has_birth_time", False)
+    birth_place = (data.get("birth_place") or "").strip()
+
     precision_level = "medium" if precision_mode == "standard" and has_birth_time else "low"
     precision_note = ""
     upgrade_hint = {"show": False, "title": "", "content": "", "affected_dimensions": []}
@@ -172,6 +185,9 @@ def analyze():
         "reminder": "保持作息节奏稳定，先顾好体力与情绪，再谈效率。",
     }
 
+    if analysis_mode == "advanced":
+        overall_advice["reminder"] = "进阶模式会更强调输入完整度与时间段差异，建议结合具体安排逐项判断。"
+
     segs = []
     for seg in segments:
         trend = "aligned" if seg["segment_index"] % 2 == 1 else "deviated"
@@ -193,6 +209,23 @@ def analyze():
             }
         )
 
+    analysis_context = {
+        "analysis_mode": analysis_mode,
+        "has_birth_time": has_birth_time,
+        "birth_place": birth_place or None,
+        "inputs_summary": [
+            "已启用进阶模式" if analysis_mode == "advanced" else "使用标准模式",
+            "已提供出生时辰" if has_birth_time else "未提供出生时辰",
+            f"出生地：{birth_place}" if birth_place else "未提供出生地",
+        ],
+    }
+
+    mode_hint = (
+        "进阶模式会更关注输入完整度对结果的影响，如果你要做更细的区间判断，建议同时提供出生时辰和出生地。"
+        if analysis_mode == "advanced"
+        else "标准模式适合先看大方向，如果你需要比较不同输入条件对结果的影响，可以切换到进阶模式。"
+    )
+
     result = {
         "request_id": str(uuid.uuid4()),
         "disclaimer": "本结果仅供参考，不替代医疗、法律或财务等专业意见。",
@@ -203,6 +236,8 @@ def analyze():
         "overall_advice": overall_advice,
         "segments": segs,
         "upgrade_hint": upgrade_hint,
+        "analysis_context": analysis_context,
+        "mode_hint": mode_hint,
     }
     return jsonify(result)
 

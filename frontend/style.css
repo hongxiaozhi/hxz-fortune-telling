@@ -250,6 +250,11 @@ select:focus {
   margin: 16px 0 0;
 }
 
+.mode-copy {
+  margin: 0 0 12px;
+  color: var(--text);
+}
+
 .mode-switch {
   display: inline-flex;
   flex-wrap: wrap;
@@ -334,6 +339,23 @@ select:focus {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid var(--line);
   border-radius: 20px;
+}
+
+.context-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.context-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(159, 95, 44, 0.1);
+  color: var(--brand-deep);
+  border: 1px solid rgba(159, 95, 44, 0.18);
+  font-size: 14px;
 }
 
 .guidance-grid {

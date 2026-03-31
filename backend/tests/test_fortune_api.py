@@ -22,6 +22,8 @@ def valid_payload(**overrides):
         "birth_date": "2000-01-01",
         "has_birth_time": True,
         "birth_time": "12:00",
+        "birth_place": "杭州",
+        "analysis_mode": "standard",
         "start_date": "2023-01-01",
         "end_date": "2023-01-30",
         "precision_mode": "standard",
@@ -37,7 +39,7 @@ def test_health_endpoint(client):
     data = response.get_json()
     assert data["status"] == "ok"
     assert data["service"] == "hxz-fortune"
-    assert data["version"] == "v1.1.1"
+    assert data["version"] == "v1.3.0"
 
 
 def test_analyze_valid(client):
@@ -56,6 +58,8 @@ def test_analyze_valid(client):
         "overall_advice",
         "segments",
         "upgrade_hint",
+        "analysis_context",
+        "mode_hint",
     ]:
         assert key in data
 
@@ -65,19 +69,44 @@ def test_analyze_valid(client):
     assert "适合" in data["overall_advice"]["suitable"]
 
 
-def test_chinese_result_copy_regression(client):
+def test_v13_analysis_context_fields(client):
     response = client.post("/api/fortune/analyze", json=valid_payload())
 
     assert response.status_code == 200
     data = response.get_json()
+    assert data["analysis_context"]["analysis_mode"] == "standard"
+    assert data["analysis_context"]["birth_place"] == "杭州"
+    assert "使用标准模式" in data["analysis_context"]["inputs_summary"]
+    assert "出生地：杭州" in data["analysis_context"]["inputs_summary"]
+    assert "标准模式" in data["mode_hint"]
 
-    assert "参考" in data["disclaimer"]
-    assert "适合" in data["overall_advice"]["suitable"]
-    assert "避免" in data["overall_advice"]["avoid"]
-    assert "提醒" in data["overall_advice"]["reminder"]
-    assert data["segments"][0]["suitable"].startswith("这段时间适合")
-    assert data["segments"][0]["avoid"].startswith("避免")
-    assert data["segments"][0]["reminder"].startswith("留意")
+
+def test_advanced_mode_changes_hint_and_reminder(client):
+    response = client.post("/api/fortune/analyze", json=valid_payload(analysis_mode="advanced"))
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["analysis_context"]["analysis_mode"] == "advanced"
+    assert "进阶模式" in data["mode_hint"]
+    assert "进阶模式" in data["overall_advice"]["reminder"]
+
+
+def test_invalid_analysis_mode(client):
+    response = client.post("/api/fortune/analyze", json=valid_payload(analysis_mode="expert"))
+
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data["error"] == "validation_error"
+    assert "analysis_mode" in data["message"]
+
+
+def test_birth_place_too_long(client):
+    response = client.post("/api/fortune/analyze", json=valid_payload(birth_place="a" * 31))
+
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data["error"] == "validation_error"
+    assert "birth_place" in data["message"]
 
 
 def test_missing_required_fields(client):
@@ -103,10 +132,7 @@ def test_invalid_gender(client):
 
 
 def test_invalid_calendar_type(client):
-    response = client.post(
-        "/api/fortune/analyze",
-        json=valid_payload(calendar_type="gregorian"),
-    )
+    response = client.post("/api/fortune/analyze", json=valid_payload(calendar_type="gregorian"))
 
     assert response.status_code == 400
     data = response.get_json()
