@@ -8,14 +8,27 @@ createApp({
     const history = ref([]);
     const errors = reactive({});
     const readingMode = ref("summary");
+    const compareRecord = ref(null);
 
     const levelLabels = { high: "高", medium: "中", low: "低" };
     const wuxingLabels = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
     const analysisModeLabels = { standard: "标准模式", advanced: "进阶模式" };
+    const HISTORY_KEY = "hxz_fortune_history";
 
-    const today = new Date();
-    const defaultStart = today.toISOString().slice(0, 10);
-    const defaultEnd = new Date(today.getTime() + 29 * 86400000).toISOString().slice(0, 10);
+    function formatDate(date) {
+      return date.toISOString().slice(0, 10);
+    }
+
+    function getRange(days) {
+      const start = new Date();
+      const end = new Date(start.getTime() + (days - 1) * 86400000);
+      return {
+        start: formatDate(start),
+        end: formatDate(end),
+      };
+    }
+
+    const defaultRange = getRange(30);
 
     const form = reactive({
       name: "",
@@ -27,14 +40,82 @@ createApp({
       has_birth_time: false,
       precision_mode: "standard",
       analysis_mode: "standard",
-      start_date: defaultStart,
-      end_date: defaultEnd,
+      start_date: defaultRange.start,
+      end_date: defaultRange.end,
     });
 
     const isSummaryMode = computed(() => readingMode.value === "summary");
     const visibleSegments = computed(() => {
       const segments = result.segments || [];
       return isSummaryMode.value ? segments.slice(0, 3) : segments;
+    });
+
+    const historyStats = computed(() => {
+      const records = history.value;
+      const advancedCount = records.filter((item) => item.meta?.analysis_mode === "advanced").length;
+      return {
+        total: records.length,
+        advanced: advancedCount,
+        standard: records.length - advancedCount,
+      };
+    });
+
+    const currentRecordId = computed(() => result.request_id || null);
+
+    const compareSummary = computed(() => {
+      if (!compareRecord.value || !result.request_id) {
+        return null;
+      }
+
+      const currentContext = result.analysis_context || {};
+      const targetContext = compareRecord.value.analysis_context || {};
+      const currentMode = analysisModeLabels[currentContext.analysis_mode] || "标准模式";
+      const targetMode = analysisModeLabels[targetContext.analysis_mode] || "标准模式";
+      const currentBirthPlace = currentContext.birth_place || "未提供";
+      const targetBirthPlace = targetContext.birth_place || "未提供";
+      const currentRange = `${result.segments?.[0]?.start_date || "-"} 至 ${result.segments?.at(-1)?.end_date || "-"}`;
+      const targetRange = `${compareRecord.value.segments?.[0]?.start_date || "-"} 至 ${compareRecord.value.segments?.at(-1)?.end_date || "-"}`;
+
+      const highlights = [];
+      if (currentMode !== targetMode) {
+        highlights.push(`这次使用${currentMode}，对比记录使用${targetMode}。`);
+      } else {
+        highlights.push(`两次都使用${currentMode}，更适合直接看输入完整度和建议差异。`);
+      }
+
+      if (currentBirthPlace !== targetBirthPlace) {
+        highlights.push(`出生地输入发生变化：当前为${currentBirthPlace}，对比记录为${targetBirthPlace}。`);
+      }
+
+      if ((currentContext.has_birth_time || false) !== (targetContext.has_birth_time || false)) {
+        highlights.push("两次记录的出生时辰完整度不同，分段提醒的细化程度会随之变化。");
+      }
+
+      if ((result.overall_advice?.suitable || "") !== (compareRecord.value.overall_advice?.suitable || "")) {
+        highlights.push("整体建议已发生变化，说明当前输入条件或分析模式影响了建议方向。");
+      }
+
+      if ((result.segments?.[0]?.suitable || "") !== (compareRecord.value.segments?.[0]?.suitable || "")) {
+        highlights.push("首段建议不同，近期执行节奏需要按当前结果重新排序。");
+      }
+
+      if (!highlights.length) {
+        highlights.push("当前结果与对比记录整体接近，可优先复用原有安排。");
+      }
+
+      return {
+        currentMode,
+        targetMode,
+        currentBirthPlace,
+        targetBirthPlace,
+        currentRange,
+        targetRange,
+        currentSuitable: result.overall_advice?.suitable || "",
+        targetSuitable: compareRecord.value.overall_advice?.suitable || "",
+        currentSegment: result.segments?.[0]?.suitable || "",
+        targetSegment: compareRecord.value.segments?.[0]?.suitable || "",
+        highlights,
+      };
     });
 
     const inputModeGuide = computed(() => {
@@ -113,9 +194,16 @@ createApp({
       form.has_birth_time = false;
       form.precision_mode = "standard";
       form.analysis_mode = "standard";
-      form.start_date = defaultStart;
-      form.end_date = defaultEnd;
+      form.start_date = defaultRange.start;
+      form.end_date = defaultRange.end;
       clearErrors();
+    }
+
+    function setQuickRange(days) {
+      const range = getRange(days);
+      form.start_date = range.start;
+      form.end_date = range.end;
+      errors.date_range = "";
     }
 
     function validate() {
@@ -169,16 +257,39 @@ createApp({
       };
     }
 
-    function saveHistory(data) {
-      let records = JSON.parse(localStorage.getItem("hxz_fortune_history") || "[]");
-      records.unshift(data);
-      records = records.slice(0, 5);
-      localStorage.setItem("hxz_fortune_history", JSON.stringify(records));
+    function buildHistoryRecord(data, payload) {
+      return {
+        ...data,
+        meta: {
+          created_at: new Date().toISOString(),
+          name: payload.name || "",
+          analysis_mode: payload.analysis_mode,
+          birth_place: payload.birth_place,
+          has_birth_time: payload.has_birth_time,
+          start_date: payload.start_date,
+          end_date: payload.end_date,
+        },
+      };
+    }
+
+    function readHistory() {
+      return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    }
+
+    function writeHistory(records) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(records));
       history.value = records;
     }
 
+    function saveHistory(data, payload) {
+      let records = readHistory();
+      records.unshift(buildHistoryRecord(data, payload));
+      records = records.slice(0, 8);
+      writeHistory(records);
+    }
+
     function loadHistoryList() {
-      history.value = JSON.parse(localStorage.getItem("hxz_fortune_history") || "[]");
+      history.value = readHistory();
     }
 
     function applyResult(data) {
@@ -187,7 +298,7 @@ createApp({
     }
 
     function loadHistory(index) {
-      const records = JSON.parse(localStorage.getItem("hxz_fortune_history") || "[]");
+      const records = readHistory();
       const selected = records[index];
       if (!selected) return;
       applyResult(selected);
@@ -196,17 +307,59 @@ createApp({
       showHistory.value = false;
     }
 
+    function setCompareRecord(index) {
+      const records = readHistory();
+      compareRecord.value = records[index] || null;
+      if (compareRecord.value) {
+        view.value = "result";
+      }
+    }
+
+    function clearCompareRecord() {
+      compareRecord.value = null;
+    }
+
+    function removeHistory(index) {
+      const records = readHistory();
+      const removed = records[index];
+      if (!removed) return;
+      records.splice(index, 1);
+      writeHistory(records);
+      if (compareRecord.value?.request_id === removed.request_id) {
+        compareRecord.value = null;
+      }
+    }
+
+    function clearHistory() {
+      writeHistory([]);
+      compareRecord.value = null;
+    }
+
     function toggleHistory() {
       showHistory.value = !showHistory.value;
+    }
+
+    function formatHistoryTitle(item) {
+      return item.meta?.name || item.overall_advice?.suitable || "查看分析结果";
+    }
+
+    function formatHistoryMeta(item) {
+      const mode = analysisModeLabels[item.meta?.analysis_mode] || "标准模式";
+      const range = item.meta?.start_date && item.meta?.end_date
+        ? `${item.meta.start_date} 至 ${item.meta.end_date}`
+        : "未记录区间";
+      const place = item.meta?.birth_place || "未提供出生地";
+      return `${mode} · ${place} · ${range}`;
     }
 
     async function onSubmit() {
       if (!validate()) return;
       view.value = "loading";
       try {
-        const response = await axios.post("/api/fortune/analyze", normalizePayload());
+        const payload = normalizePayload();
+        const response = await axios.post("/api/fortune/analyze", payload);
         applyResult(response.data);
-        saveHistory(response.data);
+        saveHistory(response.data, payload);
         readingMode.value = "summary";
         view.value = "result";
       } catch (error) {
@@ -220,10 +373,18 @@ createApp({
 
     return {
       analysisModeLabels,
+      clearCompareRecord,
+      clearHistory,
+      compareRecord,
+      compareSummary,
       contextSummary,
+      currentRecordId,
       errors,
       form,
+      formatHistoryMeta,
+      formatHistoryTitle,
       history,
+      historyStats,
       inputModeGuide,
       isSummaryMode,
       levelLabels,
@@ -231,9 +392,12 @@ createApp({
       onSubmit,
       readingGuide,
       readingMode,
+      removeHistory,
       resetForm,
       result,
       riskGuide,
+      setCompareRecord,
+      setQuickRange,
       showHistory,
       toggleHistory,
       usageGuide,

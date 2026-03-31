@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">HXZ Fortune</p>
         <h1 class="logo">运势简析</h1>
-        <p class="build-badge">当前版本 v1.3.1</p>
+        <p class="build-badge">当前版本 v1.4.0</p>
       </div>
       <button class="history-btn" type="button" @click="toggleHistory">
         {{ showHistory ? '收起记录' : '历史记录' }}
@@ -24,9 +24,9 @@
     <main class="page-shell">
       <section v-if="view === 'input'" class="card input-card">
         <div class="section-title">
-          <p class="section-kicker">v1.3 输入精度增强</p>
+          <p class="section-kicker">v1.4 复盘与复用增强</p>
           <h2>填写基础信息</h2>
-          <p>这一版重点不在重做算法，而是在现有结果结构内，让标准模式和进阶模式看起来更有差异。</p>
+          <p>这一版继续增强历史记录、结果对比和快捷时间段入口，让你更方便地回看自己最近几次分析的差异。</p>
         </div>
 
         <form @submit.prevent="onSubmit" novalidate>
@@ -104,6 +104,12 @@
                 <span class="range-separator">至</span>
                 <input type="date" v-model="form.end_date" required>
               </div>
+              <div class="quick-range-group">
+                <button type="button" class="quick-range-btn" @click="setQuickRange(7)">近 7 天</button>
+                <button type="button" class="quick-range-btn" @click="setQuickRange(14)">近 14 天</button>
+                <button type="button" class="quick-range-btn" @click="setQuickRange(30)">近 30 天</button>
+                <button type="button" class="quick-range-btn" @click="setQuickRange(90)">近 90 天</button>
+              </div>
               <span class="error" v-if="errors.date_range">{{ errors.date_range }}</span>
             </div>
           </div>
@@ -120,7 +126,7 @@
           <ul>
             <li>标准模式适合先快速获取方向性建议，即使输入还不完整也能先开始判断近期安排。</li>
             <li>进阶模式适合你已经掌握更多出生信息，想看到“输入完整度提升后结果为什么更细”。</li>
-            <li>如果切到进阶模式但没有补齐出生时辰或出生地，系统仍会返回结果，但会明确提示差异能力受限。</li>
+            <li>快捷时间段入口适合做复盘时的快速重算，避免重复手动选择日期。</li>
           </ul>
         </aside>
       </section>
@@ -157,6 +163,55 @@
           </div>
           <p>{{ contextSummary }}</p>
           <p class="muted">{{ result.mode_hint }}</p>
+        </section>
+
+        <section v-if="historyStats.total" class="panel">
+          <div class="section-title-inline">
+            <div>
+              <p class="section-kicker">历史概览</p>
+              <h3>最近记录分布</h3>
+            </div>
+          </div>
+          <div class="context-tags">
+            <span class="context-tag">共 {{ historyStats.total }} 条</span>
+            <span class="context-tag">标准 {{ historyStats.standard }} 条</span>
+            <span class="context-tag">进阶 {{ historyStats.advanced }} 条</span>
+          </div>
+          <p class="muted">可在右侧历史抽屉里选择任意一条记录设为对比对象，也可以删除不再需要的旧记录。</p>
+        </section>
+
+        <section v-if="compareSummary" class="panel compare-panel">
+          <div class="section-title-inline">
+            <div>
+              <p class="section-kicker">历史对比</p>
+              <h3>当前结果与已选记录对比</h3>
+            </div>
+            <button type="button" class="ghost-btn" @click="clearCompareRecord">清除对比</button>
+          </div>
+          <div class="compare-grid">
+            <article class="compare-card">
+              <span class="guidance-label">当前结果</span>
+              <p>模式：{{ compareSummary.currentMode }}</p>
+              <p>出生地：{{ compareSummary.currentBirthPlace }}</p>
+              <p>区间：{{ compareSummary.currentRange }}</p>
+              <p>整体建议：{{ compareSummary.currentSuitable }}</p>
+              <p>首段建议：{{ compareSummary.currentSegment }}</p>
+            </article>
+            <article class="compare-card">
+              <span class="guidance-label">对比记录</span>
+              <p>模式：{{ compareSummary.targetMode }}</p>
+              <p>出生地：{{ compareSummary.targetBirthPlace }}</p>
+              <p>区间：{{ compareSummary.targetRange }}</p>
+              <p>整体建议：{{ compareSummary.targetSuitable }}</p>
+              <p>首段建议：{{ compareSummary.targetSegment }}</p>
+            </article>
+          </div>
+          <div class="compare-insights">
+            <h4>本次差异总结</h4>
+            <ul>
+              <li v-for="item in compareSummary.highlights" :key="item">{{ item }}</li>
+            </ul>
+          </div>
         </section>
 
         <section class="panel reading-mode-panel">
@@ -237,7 +292,7 @@
               <h3>{{ isSummaryMode ? '优先看最近几段建议' : '分段建议' }}</h3>
             </div>
             <p class="muted">
-              {{ isSummaryMode ? '简明模式默认展示前 3 段。' : '按 7 天为一段展示完整结果。' }}
+              {{ isSummaryMode ? '简明模式默认显示前 3 段。' : '按 7 天为一段展示完整结果。' }}
             </p>
           </div>
 
@@ -268,40 +323,6 @@
             </article>
           </div>
         </section>
-
-        <section v-if="!isSummaryMode" class="result-grid">
-          <article class="panel">
-            <h3>八字简表</h3>
-            <dl class="bazi-grid">
-              <div>
-                <dt>年柱</dt>
-                <dd>{{ result.bazi_summary?.year_pillar }}</dd>
-              </div>
-              <div>
-                <dt>月柱</dt>
-                <dd>{{ result.bazi_summary?.month_pillar }}</dd>
-              </div>
-              <div>
-                <dt>日柱</dt>
-                <dd>{{ result.bazi_summary?.day_pillar }}</dd>
-              </div>
-              <div>
-                <dt>时柱</dt>
-                <dd>{{ result.bazi_summary?.hour_pillar || '未提供' }}</dd>
-              </div>
-            </dl>
-          </article>
-
-          <article class="panel">
-            <h3>五行分布</h3>
-            <ul class="score-list">
-              <li v-for="(value, key) in result.wuxing_score" :key="key">
-                <span>{{ wuxingLabels[key] || key }}</span>
-                <strong>{{ value }}</strong>
-              </li>
-            </ul>
-          </article>
-        </section>
       </section>
     </main>
 
@@ -314,14 +335,34 @@
         <button type="button" class="ghost-btn" @click="showHistory = false">关闭</button>
       </div>
 
+      <div v-if="history.length" class="history-toolbar">
+        <div class="context-tags">
+          <span class="context-tag">共 {{ historyStats.total }} 条</span>
+          <span class="context-tag">进阶 {{ historyStats.advanced }} 条</span>
+        </div>
+        <button type="button" class="ghost-btn" @click="clearHistory">清空记录</button>
+      </div>
+
       <p v-if="history.length === 0" class="empty-state">还没有历史记录，完成一次分析后会显示在这里。</p>
 
       <ul v-else class="history-list">
         <li v-for="(item, idx) in history" :key="item.request_id || idx">
-          <button type="button" class="history-item" @click="loadHistory(idx)">
-            <strong>{{ item.overall_advice?.suitable || '查看分析结果' }}</strong>
+          <div
+            class="history-item"
+            :class="{
+              active: item.request_id === currentRecordId,
+              comparing: item.request_id === compareRecord?.request_id
+            }"
+          >
+            <strong>{{ formatHistoryTitle(item) }}</strong>
             <span>{{ item.bazi_summary?.year_pillar }} / {{ item.bazi_summary?.month_pillar }} / {{ item.bazi_summary?.day_pillar }}</span>
-          </button>
+            <span>{{ formatHistoryMeta(item) }}</span>
+            <div class="history-actions">
+              <button type="button" class="ghost-btn" @click="loadHistory(idx)">查看</button>
+              <button type="button" class="ghost-btn" @click="setCompareRecord(idx)">设为对比</button>
+              <button type="button" class="ghost-btn danger-btn" @click="removeHistory(idx)">删除</button>
+            </div>
+          </div>
         </li>
       </ul>
     </aside>
