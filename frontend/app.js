@@ -171,6 +171,38 @@ createApp({
       return "当前结果更适合作为近期安排的参考顺序，而不是替代你对现实条件的判断。";
     });
 
+    const credibilityHint = computed(() => {
+      if (result.precision_level === "low" || result.precision_note) {
+        return {
+          level: "低",
+          text: "当前结果受输入完整度或精度限制，建议把结果作为方向性参考，避免据此做重大决定。",
+        };
+      }
+      if (result.precision_level === "medium") {
+        return {
+          level: "中",
+          text: "当前结果具有一定参考价值，适合把结论转成可执行的小步骤并观察短期反馈。",
+        };
+      }
+      return {
+        level: "高",
+        text: "输入完整且结果稳定，可更自信地把建议转化为短期行动计划。",
+      };
+    });
+
+    // 防御性处理：确保在任何情况下前端都有可展示的可信度对象
+    const safeCredibilityHint = computed(() => {
+      try {
+        const c = credibilityHint.value || {};
+        return {
+          level: c.level || '中',
+          text: c.text || '当前结果可作为参考。',
+        };
+      } catch (e) {
+        return { level: '中', text: '当前结果可作为参考。' };
+      }
+    });
+
     const usageGuide = computed(() => {
       if (isSummaryMode.value) {
         return "先把“宜 / 忌 / 提醒”转换成 1 到 2 个可执行动作，再决定这周是否要切到详细模式补看依据。";
@@ -425,6 +457,8 @@ createApp({
       levelLabels,
       loadHistory,
       onSubmit,
+      credibilityHint,
+      safeCredibilityHint,
       readingGuide,
       readingMode,
       refillFormFromHistory,

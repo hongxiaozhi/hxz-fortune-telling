@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">HXZ Fortune</p>
         <h1 class="logo">运势简析</h1>
-        <p class="build-badge">当前版本 v1.4.1</p>
+        <p class="build-badge">当前版本 v1.5.0</p>
       </div>
       <button class="history-btn" type="button" @click="toggleHistory">
         {{ showHistory ? '收起记录' : '历史记录' }}
@@ -23,6 +23,15 @@
 
     <main class="page-shell">
       <section v-if="view === 'input'" class="card input-card">
+        <div class="new-user-guide">
+          <h3>新手指引</h3>
+          <ol>
+            <li>先填写出生日期与性别，其他为可选项；</li>
+            <li>若已知出生时辰和出生地，开启“进阶模式”可获得更细化建议；</li>
+            <li>可使用“快捷时间段”快速选择分析区间；</li>
+            <li>分析完成后请查看“可信度提示”来判断结果应如何使用。</li>
+          </ol>
+        </div>
         <div class="section-title">
           <p class="section-kicker">v1.4 复盘与复用增强</p>
           <h2>填写基础信息</h2>
@@ -141,6 +150,10 @@
       <section v-if="view === 'result'" class="card result-card">
         <div class="result-top">
           <div class="disclaimer">{{ result.disclaimer }}</div>
+          <div class="credibility">
+            <strong>可信度：{{ safeCredibilityHint.level }}</strong>
+            <p class="muted">{{ safeCredibilityHint.text }}</p>
+          </div>
           <button type="button" class="secondary-btn" @click="view = 'input'">重新填写</button>
         </div>
 
