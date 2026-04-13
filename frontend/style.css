@@ -170,6 +170,22 @@ select:focus {
   align-items: center;
 }
 
+.quick-range-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.quick-range-btn {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text);
+  cursor: pointer;
+}
+
 .range-separator {
   color: var(--muted);
 }
@@ -345,6 +361,41 @@ select:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.compare-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+}
+
+.compare-card p {
+  margin: 10px 0 0;
+}
+
+.compare-insights {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(244, 226, 208, 0.34);
+  border: 1px solid var(--line);
+}
+
+.compare-insights h4 {
+  margin: 0 0 10px;
+}
+
+.compare-insights ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
 }
 
 .context-tag {
@@ -548,12 +599,40 @@ select:focus {
   margin-top: 20px;
 }
 
+.history-toolbar {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
 .history-item {
   width: 100%;
   text-align: left;
   padding: 16px;
   background: var(--surface-strong);
   border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.history-item.active {
+  border-color: rgba(159, 95, 44, 0.45);
+  box-shadow: 0 10px 24px rgba(112, 65, 29, 0.08);
+}
+
+.history-item.comparing {
+  background: rgba(244, 226, 208, 0.42);
+}
+
+.history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.danger-btn {
+  color: #9d372b;
+  border-color: rgba(157, 55, 43, 0.2);
 }
 
 .history-item strong,
@@ -586,7 +665,8 @@ select:focus {
 
   .form-grid,
   .result-grid,
-  .guidance-grid {
+  .guidance-grid,
+  .compare-grid {
     grid-template-columns: 1fr;
   }
 

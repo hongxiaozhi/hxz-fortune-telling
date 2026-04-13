@@ -8,29 +8,27 @@ createApp({
     const history = ref([]);
     const errors = reactive({});
     const readingMode = ref("summary");
+    const compareRecord = ref(null);
 
-    const levelLabels = {
-      high: "高",
-      medium: "中",
-      low: "低",
-    };
+    const levelLabels = { high: "高", medium: "中", low: "低" };
+    const wuxingLabels = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+    const analysisModeLabels = { standard: "标准模式", advanced: "进阶模式" };
+    const HISTORY_KEY = "hxz_fortune_history";
 
-    const wuxingLabels = {
-      wood: "木",
-      fire: "火",
-      earth: "土",
-      metal: "金",
-      water: "水",
-    };
+    function formatDate(date) {
+      return date.toISOString().slice(0, 10);
+    }
 
-    const analysisModeLabels = {
-      standard: "标准模式",
-      advanced: "进阶模式",
-    };
+    function getRange(days) {
+      const start = new Date();
+      const end = new Date(start.getTime() + (days - 1) * 86400000);
+      return {
+        start: formatDate(start),
+        end: formatDate(end),
+      };
+    }
 
-    const today = new Date();
-    const defaultStart = today.toISOString().slice(0, 10);
-    const defaultEnd = new Date(today.getTime() + 29 * 86400000).toISOString().slice(0, 10);
+    const defaultRange = getRange(30);
 
     const form = reactive({
       name: "",
@@ -42,8 +40,8 @@ createApp({
       has_birth_time: false,
       precision_mode: "standard",
       analysis_mode: "standard",
-      start_date: defaultStart,
-      end_date: defaultEnd,
+      start_date: defaultRange.start,
+      end_date: defaultRange.end,
     });
 
     const isSummaryMode = computed(() => readingMode.value === "summary");
@@ -51,46 +49,165 @@ createApp({
       const segments = result.segments || [];
       return isSummaryMode.value ? segments.slice(0, 3) : segments;
     });
-    const deviatedCount = computed(() => {
-      const segments = result.segments || [];
-      return segments.filter((seg) => seg.trend_alignment === "deviated").length;
+
+    const historyStats = computed(() => {
+      const records = history.value;
+      const advancedCount = records.filter((item) => item.meta?.analysis_mode === "advanced").length;
+      return {
+        total: records.length,
+        advanced: advancedCount,
+        standard: records.length - advancedCount,
+      };
     });
+
+    const currentRecordId = computed(() => result.request_id || null);
+
+    const compareSummary = computed(() => {
+      if (!compareRecord.value || !result.request_id) {
+        return null;
+      }
+
+      const currentContext = result.analysis_context || {};
+      const targetContext = compareRecord.value.analysis_context || {};
+      const currentMode = analysisModeLabels[currentContext.analysis_mode] || "标准模式";
+      const targetMode = analysisModeLabels[targetContext.analysis_mode] || "标准模式";
+      const currentBirthPlace = currentContext.birth_place || "未提供";
+      const targetBirthPlace = targetContext.birth_place || "未提供";
+      const currentRange = `${result.segments?.[0]?.start_date || "-"} 至 ${result.segments?.at(-1)?.end_date || "-"}`;
+      const targetRange = `${compareRecord.value.segments?.[0]?.start_date || "-"} 至 ${compareRecord.value.segments?.at(-1)?.end_date || "-"}`;
+
+      const highlights = [];
+      if (currentMode !== targetMode) {
+        highlights.push(`这次使用${currentMode}，对比记录使用${targetMode}。`);
+      } else {
+        highlights.push(`两次都使用${currentMode}，更适合直接看输入完整度和建议差异。`);
+      }
+
+      if (currentBirthPlace !== targetBirthPlace) {
+        highlights.push(`出生地输入发生变化：当前为${currentBirthPlace}，对比记录为${targetBirthPlace}。`);
+      }
+
+      if ((currentContext.has_birth_time || false) !== (targetContext.has_birth_time || false)) {
+        highlights.push("两次记录的出生时辰完整度不同，分段提醒的细化程度会随之变化。");
+      }
+
+      if ((result.overall_advice?.suitable || "") !== (compareRecord.value.overall_advice?.suitable || "")) {
+        highlights.push("整体建议已发生变化，说明当前输入条件或分析模式影响了建议方向。");
+      }
+
+      if ((result.segments?.[0]?.suitable || "") !== (compareRecord.value.segments?.[0]?.suitable || "")) {
+        highlights.push("首段建议不同，近期执行节奏需要按当前结果重新排序。");
+      }
+
+      if (!highlights.length) {
+        highlights.push("当前结果与对比记录整体接近，可优先复用原有安排。");
+      }
+
+      return {
+        currentMode,
+        targetMode,
+        currentBirthPlace,
+        targetBirthPlace,
+        currentRange,
+        targetRange,
+        currentSuitable: result.overall_advice?.suitable || "",
+        targetSuitable: compareRecord.value.overall_advice?.suitable || "",
+        currentSegment: result.segments?.[0]?.suitable || "",
+        targetSegment: compareRecord.value.segments?.[0]?.suitable || "",
+        highlights,
+      };
+    });
+
+    const inputModeGuide = computed(() => {
+      if (form.analysis_mode === "advanced") {
+        if (!form.has_birth_time && !form.birth_place.trim()) {
+          return "你已切到进阶模式，但当前缺少出生时辰和出生地，只能得到轻量差异提示，结果不会明显细化。";
+        }
+        if (!form.has_birth_time || !form.birth_place.trim()) {
+          return "你已切到进阶模式，补齐出生时辰和出生地后，结果会更容易体现和标准模式的差异。";
+        }
+        return "当前输入已经适合进阶模式，结果会更强调输入完整度带来的节奏差异与提醒变化。";
+      }
+      return "标准模式适合先快速看方向，输入不完整时也能先得到可执行建议。";
+    });
+
+    const contextSummary = computed(() => {
+      const context = result.analysis_context;
+      if (!context) return "";
+      if (context.analysis_mode === "advanced" && context.has_birth_time && context.birth_place) {
+        return "这次使用了进阶模式、出生时辰和出生地，当前结果会比标准模式更细，更强调分段节奏差异。";
+      }
+      if (context.analysis_mode === "advanced") {
+        return "这次使用了进阶模式，但输入仍不完整，所以结果以轻量差异提示为主，不把细节判断说得过满。";
+      }
+      return "这次使用标准模式，结果以方向性建议为主，适合先建立整体安排顺序。";
+    });
+
     const readingGuide = computed(() => ({
       title: isSummaryMode.value ? "先看能不能马上执行" : "按完整结构逐项判断",
       description: isSummaryMode.value
-        ? "简明模式优先保留一句话结论、整体建议和最近几段重点提醒，适合先判断近期安排是否要收紧或推进。"
-        : "详细模式会保留完整分段、五行分布和维度提示，适合你在已经知道大方向后，继续核对依据和细节差异。",
+        ? "简明模式优先保留一句话结论、整体建议和最近几段重点提醒，适合先判断近期安排是收紧还是推进。"
+        : "详细模式会保留完整分段、五行分布和维度提示，适合你在知道大方向后继续核对依据和差异。",
     }));
+
     const riskGuide = computed(() => {
       const hasPrecisionLimit = Boolean(result.precision_note);
-      const hasUpgradeHint = Boolean(result.upgrade_hint?.show);
-      const deviationTotal = deviatedCount.value;
+      const upgradeVisible = Boolean(result.upgrade_hint?.show);
+      const segments = result.segments || [];
+      const deviatedCount = segments.filter((segment) => segment.trend_alignment === "deviated").length;
 
-      if (hasPrecisionLimit && deviationTotal > 0) {
-        return "当前结果包含精度限制，而且部分分段与整体趋势存在偏移，适合把它当作提醒清单，而不是确定结论。";
+      if (hasPrecisionLimit && deviatedCount > 0) {
+        return "当前结果既存在精度限制，也存在阶段波动，适合把它当作提醒清单，而不是确定结论。";
       }
       if (hasPrecisionLimit) {
-        return "当前结果带有精度限制，适合用于提前规避明显风险，不适合做过细的时间点判断。";
+        return "当前结果带有输入完整度限制，更适合用来提前规避明显风险，不适合做过细的时间点判断。";
       }
-      if (deviationTotal > 0) {
-        return `有 ${deviationTotal} 个分段与整体趋势不完全一致，说明近期节奏可能波动，阅读时要以分段提醒为准。`;
+      if (deviatedCount > 0) {
+        return `当前有 ${deviatedCount} 个分段与整体趋势存在偏移，阅读时要优先看分段提醒，不要只看一句话总结。`;
       }
-      if (hasUpgradeHint) {
-        return "当前结果已经能给出方向性建议，但如果你要做更细的安排，可以补充更完整信息后再复看。";
+      if (upgradeVisible) {
+        return "当前结果已能给出方向性建议，但如果你需要更细的安排参考，仍建议补齐关键信息后再复看。";
       }
       return "当前结果更适合作为近期安排的参考顺序，而不是替代你对现实条件的判断。";
     });
+
+    const credibilityHint = computed(() => {
+      if (result.precision_level === "low" || result.precision_note) {
+        return {
+          level: "低",
+          text: "当前结果受输入完整度或精度限制，建议把结果作为方向性参考，避免据此做重大决定。",
+        };
+      }
+      if (result.precision_level === "medium") {
+        return {
+          level: "中",
+          text: "当前结果具有一定参考价值，适合把结论转成可执行的小步骤并观察短期反馈。",
+        };
+      }
+      return {
+        level: "高",
+        text: "输入完整且结果稳定，可更自信地把建议转化为短期行动计划。",
+      };
+    });
+
+    // 防御性处理：确保在任何情况下前端都有可展示的可信度对象
+    const safeCredibilityHint = computed(() => {
+      try {
+        const c = credibilityHint.value || {};
+        return {
+          level: c.level || '中',
+          text: c.text || '当前结果可作为参考。',
+        };
+      } catch (e) {
+        return { level: '中', text: '当前结果可作为参考。' };
+      }
+    });
+
     const usageGuide = computed(() => {
       if (isSummaryMode.value) {
-        return "先把“宜 / 忌 / 提醒”转成 1 到 2 个可执行动作，再决定这周是否需要切到详细模式补看依据。";
+        return "先把“宜 / 忌 / 提醒”转换成 1 到 2 个可执行动作，再决定这周是否要切到详细模式补看依据。";
       }
       return "详细模式更适合复查：先看整体建议，再看分段差异，最后参考五行和维度信息，不建议跳着读。";
-    });
-    const inputModeGuide = computed(() => {
-      if (form.analysis_mode === "advanced") {
-        return "进阶模式更适合你已经知道出生地、出生时辰，且希望比较不同输入完整度对结果细节的影响。";
-      }
-      return "标准模式适合先获取方向性建议，输入不完整时也能较快得到可读结果。";
     });
 
     function clearErrors() {
@@ -109,9 +226,16 @@ createApp({
       form.has_birth_time = false;
       form.precision_mode = "standard";
       form.analysis_mode = "standard";
-      form.start_date = defaultStart;
-      form.end_date = defaultEnd;
+      form.start_date = defaultRange.start;
+      form.end_date = defaultRange.end;
       clearErrors();
+    }
+
+    function setQuickRange(days) {
+      const range = getRange(days);
+      form.start_date = range.start;
+      form.end_date = range.end;
+      errors.date_range = "";
     }
 
     function validate() {
@@ -122,17 +246,14 @@ createApp({
         errors.gender = "请选择性别。";
         ok = false;
       }
-
       if (!form.birth_date) {
         errors.birth_date = "请选择出生日期。";
         ok = false;
       }
-
       if (form.birth_place && form.birth_place.trim().length > 30) {
         errors.birth_place = "出生地最多填写 30 个字符。";
         ok = false;
       }
-
       if (!form.start_date || !form.end_date) {
         errors.date_range = "请选择完整的分析区间。";
         ok = false;
@@ -140,7 +261,6 @@ createApp({
         const startDate = new Date(form.start_date);
         const endDate = new Date(form.end_date);
         const diffDays = (endDate - startDate) / 86400000;
-
         if (startDate > endDate) {
           errors.date_range = "开始日期不能晚于结束日期。";
           ok = false;
@@ -149,17 +269,14 @@ createApp({
           ok = false;
         }
       }
-
       if (form.has_birth_time && !form.birth_time) {
         errors.birth_time = "已勾选出生时辰时，需要填写出生时间。";
         ok = false;
       }
-
       if (!form.has_birth_time && form.birth_time) {
         errors.birth_time = "未勾选出生时辰时，请清空出生时间。";
         ok = false;
       }
-
       return ok;
     }
 
@@ -172,55 +289,144 @@ createApp({
       };
     }
 
-    function saveHistory(data) {
-      let records = JSON.parse(localStorage.getItem("hxz_fortune_history") || "[]");
-      records.unshift(data);
-      records = records.slice(0, 5);
-      localStorage.setItem("hxz_fortune_history", JSON.stringify(records));
+    function buildHistoryRecord(data, payload) {
+      return {
+        ...data,
+        meta: {
+          created_at: new Date().toISOString(),
+          name: payload.name || "",
+          analysis_mode: payload.analysis_mode,
+          birth_place: payload.birth_place,
+          has_birth_time: payload.has_birth_time,
+          start_date: payload.start_date,
+          end_date: payload.end_date,
+        },
+        input_snapshot: {
+          name: payload.name || "",
+          gender: payload.gender,
+          calendar_type: payload.calendar_type,
+          birth_date: payload.birth_date,
+          birth_time: payload.birth_time || "",
+          birth_place: payload.birth_place || "",
+          has_birth_time: payload.has_birth_time,
+          precision_mode: payload.precision_mode,
+          analysis_mode: payload.analysis_mode,
+          start_date: payload.start_date,
+          end_date: payload.end_date,
+        },
+      };
+    }
+
+    function readHistory() {
+      return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    }
+
+    function writeHistory(records) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(records));
       history.value = records;
     }
 
+    function saveHistory(data, payload) {
+      let records = readHistory();
+      records.unshift(buildHistoryRecord(data, payload));
+      records = records.slice(0, 8);
+      writeHistory(records);
+    }
+
     function loadHistoryList() {
-      history.value = JSON.parse(localStorage.getItem("hxz_fortune_history") || "[]");
+      history.value = readHistory();
     }
 
     function applyResult(data) {
-      Object.keys(result).forEach((key) => {
-        delete result[key];
-      });
+      Object.keys(result).forEach((key) => delete result[key]);
       Object.assign(result, data);
     }
 
     function loadHistory(index) {
-      const records = JSON.parse(localStorage.getItem("hxz_fortune_history") || "[]");
+      const records = readHistory();
       const selected = records[index];
-      if (!selected) {
-        return;
-      }
-
+      if (!selected) return;
       applyResult(selected);
       readingMode.value = "summary";
       view.value = "result";
       showHistory.value = false;
     }
 
+    function refillFormFromHistory(index) {
+      const records = readHistory();
+      const selected = records[index];
+      const snapshot = selected?.input_snapshot;
+      if (!snapshot) return;
+
+      form.name = snapshot.name || "";
+      form.gender = snapshot.gender || "";
+      form.calendar_type = snapshot.calendar_type || "solar";
+      form.birth_date = snapshot.birth_date || "";
+      form.birth_time = snapshot.birth_time || "";
+      form.birth_place = snapshot.birth_place || "";
+      form.has_birth_time = Boolean(snapshot.has_birth_time);
+      form.precision_mode = snapshot.precision_mode || "standard";
+      form.analysis_mode = snapshot.analysis_mode || "standard";
+      form.start_date = snapshot.start_date || defaultRange.start;
+      form.end_date = snapshot.end_date || defaultRange.end;
+      clearErrors();
+      view.value = "input";
+      showHistory.value = false;
+    }
+
+    function setCompareRecord(index) {
+      const records = readHistory();
+      compareRecord.value = records[index] || null;
+      if (compareRecord.value) {
+        view.value = "result";
+      }
+    }
+
+    function clearCompareRecord() {
+      compareRecord.value = null;
+    }
+
+    function removeHistory(index) {
+      const records = readHistory();
+      const removed = records[index];
+      if (!removed) return;
+      records.splice(index, 1);
+      writeHistory(records);
+      if (compareRecord.value?.request_id === removed.request_id) {
+        compareRecord.value = null;
+      }
+    }
+
+    function clearHistory() {
+      writeHistory([]);
+      compareRecord.value = null;
+    }
+
     function toggleHistory() {
       showHistory.value = !showHistory.value;
     }
 
+    function formatHistoryTitle(item) {
+      return item.meta?.name || item.overall_advice?.suitable || "查看分析结果";
+    }
+
+    function formatHistoryMeta(item) {
+      const mode = analysisModeLabels[item.meta?.analysis_mode] || "标准模式";
+      const range = item.meta?.start_date && item.meta?.end_date
+        ? `${item.meta.start_date} 至 ${item.meta.end_date}`
+        : "未记录区间";
+      const place = item.meta?.birth_place || "未提供出生地";
+      return `${mode} · ${place} · ${range}`;
+    }
+
     async function onSubmit() {
-      if (!validate()) {
-        return;
-      }
-
+      if (!validate()) return;
       view.value = "loading";
-
       try {
         const payload = normalizePayload();
         const response = await axios.post("/api/fortune/analyze", payload);
-
         applyResult(response.data);
-        saveHistory(response.data);
+        saveHistory(response.data, payload);
         readingMode.value = "summary";
         view.value = "result";
       } catch (error) {
@@ -234,19 +440,34 @@ createApp({
 
     return {
       analysisModeLabels,
+      clearCompareRecord,
+      clearHistory,
+      compareRecord,
+      compareSummary,
+      contextSummary,
+      currentRecordId,
       errors,
       form,
+      formatHistoryMeta,
+      formatHistoryTitle,
       history,
+      historyStats,
       inputModeGuide,
       isSummaryMode,
       levelLabels,
       loadHistory,
       onSubmit,
+      credibilityHint,
+      safeCredibilityHint,
       readingGuide,
       readingMode,
+      refillFormFromHistory,
+      removeHistory,
       resetForm,
       result,
       riskGuide,
+      setCompareRecord,
+      setQuickRange,
       showHistory,
       toggleHistory,
       usageGuide,
